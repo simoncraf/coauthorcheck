@@ -22,6 +22,7 @@ class ValidationIssue:
     code: str
     message: str
     line_number: int
+    suggestion: str | None = None
 
 
 @dataclass(slots=True)

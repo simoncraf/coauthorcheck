@@ -75,6 +75,11 @@ class CliTests(unittest.TestCase):
         self.assertEqual(result.exit_code, 1)
         self.assertIn("invalid-format", result.stdout)
         self.assertIn("missing-email", result.stdout)
+        self.assertIn("Suggestion", result.stdout)
+        self.assertIn("Co-authored-by:", result.stdout)
+        self.assertIn("@simoncraf", result.stdout)
+        self.assertIn("<email@example.com>", result.stdout)
+        self.assertEqual(result.stdout.count("@simoncraf"), 1)
 
     def test_commit_range_failure_exit_code(self) -> None:
         commits = [
@@ -109,8 +114,17 @@ class CliTests(unittest.TestCase):
         self.assertEqual(payload["results"][0]["issue_count"], 0)
         self.assertEqual(payload["results"][1]["source"], "d4e5f6")
         self.assertFalse(payload["results"][1]["is_valid"])
-        self.assertIn("malformed-email", [issue["code"] for issue in payload["results"][1]["issues"]])
-        self.assertIn("github-handle", [issue["code"] for issue in payload["results"][1]["issues"]])
+        issue_map = {issue["code"]: issue for issue in payload["results"][1]["issues"]}
+        self.assertIn("malformed-email", issue_map)
+        self.assertIn("github-handle", issue_map)
+        self.assertEqual(
+            issue_map["github-handle"]["suggestion"],
+            "Co-authored-by: Full Name <email@example.com>",
+        )
+        self.assertEqual(
+            issue_map["malformed-email"]["suggestion"],
+            "Co-authored-by: Full Name <email@example.com>",
+        )
 
     def test_positional_range_input_is_detected(self) -> None:
         commits = [

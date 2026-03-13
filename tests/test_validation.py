@@ -66,6 +66,11 @@ class ValidationTests(unittest.TestCase):
         self.assertIn("incorrect-casing", codes)
         self.assertIn("github-handle", codes)
         self.assertIn("malformed-email", codes)
+        suggestions = {issue.suggestion for issue in result.issues}
+        self.assertEqual(
+            suggestions,
+            {"Co-authored-by: Full Name <email@example.com>"},
+        )
 
     def test_missing_name_and_email_format_errors_are_reported(self) -> None:
         result = validate_message(
@@ -95,6 +100,11 @@ class ValidationTests(unittest.TestCase):
         codes = [issue.code for issue in result.issues]
         self.assertIn("invalid-format", codes)
         self.assertIn("missing-email", codes)
+        suggestions = {issue.suggestion for issue in result.issues}
+        self.assertEqual(
+            suggestions,
+            {"Co-authored-by: Jane Doe <jane@example.com>"},
+        )
 
     def test_single_word_name_rule_can_be_disabled(self) -> None:
         result = validate_message(

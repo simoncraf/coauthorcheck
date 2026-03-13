@@ -84,13 +84,24 @@ def render_result(result: ValidationResult) -> None:
         return
 
     console.print(f"[red]Issues[/red] {result.source} ({len(result.issues)})")
+    has_suggestions = any(issue.suggestion for issue in result.issues)
     table = Table(show_header=True, header_style="bold")
     table.add_column("Line", style="cyan", justify="right", no_wrap=True)
     table.add_column("Code", style="magenta", no_wrap=True)
     table.add_column("Message", style="white")
+    if has_suggestions:
+        table.add_column("Suggestion", style="green")
 
+    shown_suggestion_lines: set[int] = set()
     for issue in result.issues:
-        table.add_row(str(issue.line_number), issue.code, issue.message)
+        row = [str(issue.line_number), issue.code, issue.message]
+        if has_suggestions:
+            suggestion = ""
+            if issue.suggestion and issue.line_number not in shown_suggestion_lines:
+                suggestion = issue.suggestion
+                shown_suggestion_lines.add(issue.line_number)
+            row.append(suggestion)
+        table.add_row(*row)
 
     console.print(table)
 
@@ -128,6 +139,7 @@ def _serialize_results(results: list[ValidationResult]) -> dict:
                         "code": issue.code,
                         "message": issue.message,
                         "line_number": issue.line_number,
+                        "suggestion": issue.suggestion,
                     }
                     for issue in result.issues
                 ],

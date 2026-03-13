@@ -10,10 +10,73 @@ COAUTHOR_TOKEN = "Co-authored-by"
 NAME_EMAIL_PATTERN = re.compile(r"^(?P<name>.*?)\s*<(?P<email>[^<>]+)>$")
 EMAIL_PATTERN = re.compile(r"^[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+$")
 GITHUB_HANDLE_PATTERN = re.compile(r"^@[A-Za-z0-9-]+$")
+EMBEDDED_EMAIL_PATTERN = re.compile(r"(?P<email>[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+)$")
 
 
-def _build_issue(code: str, message: str, line_number: int) -> ValidationIssue:
-    return ValidationIssue(code=code, message=message, line_number=line_number)
+def _build_issue(
+    code: str,
+    message: str,
+    line_number: int,
+    suggestion: str | None = None,
+) -> ValidationIssue:
+    return ValidationIssue(code=code, message=message, line_number=line_number, suggestion=suggestion)
+
+
+def _suggested_trailer(name: str | None = None, email: str | None = None) -> str:
+    suggested_name = name.strip() if name and name.strip() else "Full Name"
+    suggested_email = email.strip() if email and email.strip() else "email@example.com"
+    return f"{COAUTHOR_TOKEN}: {suggested_name} <{suggested_email}>"
+
+
+def _extract_trailer_parts(trailer: Trailer) -> tuple[str | None, str | None]:
+    match = NAME_EMAIL_PATTERN.match(trailer.value)
+    if match is not None:
+        name = match.group("name").strip() or None
+        email = match.group("email").strip() or None
+        return name, email
+
+    raw_value = trailer.value.strip()
+    name_part, separator, email_part = raw_value.partition("<")
+    if separator:
+        name = name_part.strip() or None
+        email = email_part.replace(">", "").strip() or None
+        return name, email
+
+    embedded_email = EMBEDDED_EMAIL_PATTERN.search(raw_value)
+    if embedded_email is not None:
+        email = embedded_email.group("email").strip()
+        name = raw_value[: embedded_email.start()].strip() or None
+        return name, email
+
+    return raw_value or None, None
+
+
+def _merged_suggestion(trailer: Trailer, issue_codes: set[str]) -> str:
+    name, email = _extract_trailer_parts(trailer)
+
+    if "missing-name" in issue_codes or not name:
+        name = "Full Name"
+    elif "github-handle" in issue_codes:
+        name = "Full Name"
+    elif "single-word-name" in issue_codes:
+        name = f"{name} Surname"
+
+    if ("missing-email" in issue_codes and not email) or not email:
+        email = "email@example.com"
+    elif "malformed-email" in issue_codes:
+        email = "email@example.com"
+
+    return _suggested_trailer(name=name, email=email)
+
+
+def _apply_suggestion(issues: list[ValidationIssue], trailer: Trailer) -> list[ValidationIssue]:
+    if not issues:
+        return issues
+
+    suggestion = _merged_suggestion(trailer, {issue.code for issue in issues})
+    for issue in issues:
+        issue.suggestion = suggestion
+    return issues
 
 
 def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[ValidationIssue]:
@@ -59,7 +122,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
                 )
             )
 
-        return _dedupe_issues(issues)
+        return _apply_suggestion(_dedupe_issues(issues), trailer)
 
     name = match.group("name").strip()
     email = match.group("email").strip()
@@ -115,7 +178,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
             )
         )
 
-    return _dedupe_issues(issues)
+    return _apply_suggestion(_dedupe_issues(issues), trailer)
 
 
 def validate_message(source: str, message: str, config: Config = DEFAULT_CONFIG) -> ValidationResult:
