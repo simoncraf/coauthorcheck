@@ -133,7 +133,7 @@ In Git Bash, use `/c/...` style paths:
 Run the test suite:
 
 ```bash
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+uv run pytest
 ```
 
 Run the linter:
