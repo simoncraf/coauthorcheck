@@ -1,6 +1,25 @@
-# coauthorcheck
+<p align="center">
+  <img src="docs/assets/coauthorcheck.png" alt="coauthorcheck logo" width="180">
+</p>
 
-Lightweight command-line validation for `Co-authored-by` commit trailers.
+<h1 align="center">coauthorcheck</h1>
+
+<p align="center">Lightweight command-line validation for <code>Co-authored-by</code> commit trailers.</p>
+
+<p align="center">
+  <a href="https://github.com/simoncraf/coauthorcheck/actions/workflows/ci.yml">
+    <img src="https://github.com/simoncraf/coauthorcheck/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://pypi.org/project/coauthorcheck/">
+    <img src="https://img.shields.io/pypi/v/coauthorcheck" alt="PyPI version">
+  </a>
+  <a href="https://pypi.org/project/coauthorcheck/">
+    <img src="https://img.shields.io/pypi/pyversions/coauthorcheck" alt="Supported Python versions">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/pypi/l/coauthorcheck" alt="License">
+  </a>
+</p>
 
 ## Usage
 
