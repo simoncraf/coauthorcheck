@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from coauthorcheck.config import ConfigError, load_config
-from coauthorcheck.git_utils import GitError, read_commit_message, read_commit_range
+from coauthorcheck.git_utils import GitError, clean_commit_message_text, read_commit_message, read_commit_range
 from coauthorcheck.models import CommitMessage, ValidationResult
 from coauthorcheck.validation import validate_message
 
@@ -40,7 +40,12 @@ def load_messages(
         raise ValueError("Provide either a positional input or an explicit flag, not both.")
 
     if file_path is not None:
-        return [CommitMessage(source=str(file_path), message=file_path.read_text(encoding="utf-8"))]
+        return [
+            CommitMessage(
+                source=str(file_path),
+                message=clean_commit_message_text(file_path.read_text(encoding="utf-8")),
+            )
+        ]
 
     if commit is not None:
         return [read_commit_message(commit)]
@@ -54,7 +59,12 @@ def load_messages(
     detected_kind = detect_input_kind(input_value)
     if detected_kind == "file":
         path = Path(input_value)
-        return [CommitMessage(source=str(path), message=path.read_text(encoding="utf-8"))]
+        return [
+            CommitMessage(
+                source=str(path),
+                message=clean_commit_message_text(path.read_text(encoding="utf-8")),
+            )
+        ]
     if detected_kind == "range":
         return read_commit_range(input_value)
     return [read_commit_message(input_value)]

@@ -28,6 +28,23 @@ def read_commit_range(commit_range: str) -> list[CommitMessage]:
     return [read_commit_message(commit) for commit in commits]
 
 
+def clean_commit_message_text(message: str, comment_char: str = "#") -> str:
+    cleaned_lines: list[str] = []
+    scissors_marker = f"{comment_char} ------------------------ >8 ------------------------"
+
+    for line in message.splitlines():
+        if line == scissors_marker:
+            break
+        if line.startswith(comment_char):
+            continue
+        cleaned_lines.append(line)
+
+    cleaned_message = "\n".join(cleaned_lines).rstrip()
+    if message.endswith("\n"):
+        return f"{cleaned_message}\n" if cleaned_message else ""
+    return cleaned_message
+
+
 def _run_git(args: list[str]) -> str:
     completed = subprocess.run(
         ["git", *args],

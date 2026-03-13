@@ -60,6 +60,22 @@ class CliTests(unittest.TestCase):
         self.assertTrue(payload["results"][0]["is_valid"])
         self.assertEqual(payload["results"][0]["issues"], [])
 
+    def test_file_input_strips_git_comment_lines_before_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "COMMIT_MSG"
+            path.write_text(
+                "Initial commit\n\n"
+                "Co-authored-by: @simoncraf\n"
+                "# Please enter the commit message for your changes.\n",
+                encoding="utf-8",
+            )
+
+            result = runner.invoke(app, ["--file", str(path)])
+
+        self.assertEqual(result.exit_code, 1)
+        self.assertIn("invalid-format", result.stdout)
+        self.assertIn("missing-email", result.stdout)
+
     def test_commit_range_failure_exit_code(self) -> None:
         commits = [
             CommitMessage(source="a1b2c3", message="Subject\n\nCo-authored-by: Jane Doe <jane@example.com>\n"),
