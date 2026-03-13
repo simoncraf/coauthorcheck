@@ -1,5 +1,6 @@
 import unittest
 
+from coauthorcheck.config import Config, RuleConfig
 from coauthorcheck.validation import (
     EMAIL_PATTERN,
     GITHUB_HANDLE_PATTERN,
@@ -94,6 +95,24 @@ class ValidationTests(unittest.TestCase):
         codes = [issue.code for issue in result.issues]
         self.assertIn("invalid-format", codes)
         self.assertIn("missing-email", codes)
+
+    def test_single_word_name_rule_can_be_disabled(self) -> None:
+        result = validate_message(
+            "commit6",
+            "Subject\n\nCo-authored-by: Prince <prince@example.com>\n",
+            config=Config(rules=RuleConfig(single_word_name=False)),
+        )
+
+        self.assertNotIn("single-word-name", [issue.code for issue in result.issues])
+
+    def test_github_handle_rule_can_be_disabled(self) -> None:
+        result = validate_message(
+            "commit7",
+            "Subject\n\nCo-authored-by: @octocat <octocat@example.com>\n",
+            config=Config(rules=RuleConfig(github_handle=False)),
+        )
+
+        self.assertNotIn("github-handle", [issue.code for issue in result.issues])
 
 
 if __name__ == "__main__":

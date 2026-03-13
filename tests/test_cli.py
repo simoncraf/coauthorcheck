@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+import os
 
 from typer.testing import CliRunner
 
@@ -79,6 +80,52 @@ class CliTests(unittest.TestCase):
         result = runner.invoke(app, ["HEAD", "--commit", "HEAD"])
         self.assertEqual(result.exit_code, 2)
         self.assertIn("Provide either a positional input or an explicit flag", result.output)
+
+    def test_config_can_disable_single_word_name_rule(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            message_path = root / "COMMIT_MSG"
+            config_path = root / ".coauthorcheck.toml"
+            message_path.write_text(
+                "Subject\n\nCo-authored-by: Prince <prince@example.com>\n",
+                encoding="utf-8",
+            )
+            config_path.write_text(
+                "[rules]\n"
+                "single_word_name = false\n",
+                encoding="utf-8",
+            )
+
+            result = runner.invoke(app, ["--config", str(config_path), str(message_path)])
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("Summary: PASS", result.stdout)
+
+    def test_pyproject_config_is_auto_discovered_from_parent_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            nested = root / "nested"
+            nested.mkdir()
+            message_path = nested / "COMMIT_MSG"
+            message_path.write_text(
+                "Subject\n\nCo-authored-by: Prince <prince@example.com>\n",
+                encoding="utf-8",
+            )
+            (root / "pyproject.toml").write_text(
+                "[tool.coauthorcheck.rules]\n"
+                "single_word_name = false\n",
+                encoding="utf-8",
+            )
+
+            original_cwd = Path.cwd()
+            try:
+                os.chdir(nested)
+                result = runner.invoke(app, ["COMMIT_MSG"])
+            finally:
+                os.chdir(original_cwd)
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("Summary: PASS", result.stdout)
 
     def test_invalid_range_gets_actionable_hint(self) -> None:
         error = GitError(

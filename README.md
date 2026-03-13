@@ -49,6 +49,58 @@ Validate the last few commits on the current branch:
 coauthorcheck HEAD~3..HEAD
 ```
 
+## Configuration
+
+`coauthorcheck` supports repository-local configuration from either:
+
+- `pyproject.toml` under `[tool.coauthorcheck]`
+- `.coauthorcheck.toml`
+
+Configuration is resolved in this order:
+
+1. `--config <path>`
+2. nearest `.coauthorcheck.toml`
+3. nearest `pyproject.toml` with `[tool.coauthorcheck]`
+4. built-in defaults
+
+When config files are auto-discovered, `coauthorcheck` searches upward from the current working directory. This means running the tool from a nested folder in the repo still finds the repo-level config.
+
+Example using `pyproject.toml`:
+
+```toml
+[tool.coauthorcheck.rules]
+single_word_name = false
+github_handle = true
+incorrect_casing = true
+invalid_format = true
+malformed_email = true
+missing_email = true
+missing_name = true
+```
+
+Example using `.coauthorcheck.toml`:
+
+```toml
+[rules]
+single_word_name = false
+github_handle = false
+incorrect_casing = true
+invalid_format = true
+malformed_email = true
+missing_email = true
+missing_name = true
+```
+
+Use an explicit config file with:
+
+```bash
+coauthorcheck --config .coauthorcheck.toml main..HEAD
+```
+
+Unknown rule names or non-boolean values are treated as configuration errors.
+
+See [RULES.md](RULES.md) for a detailed explanation of each rule.
+
 ## Installation
 
 For local development in this repo:
@@ -82,6 +134,12 @@ Run the test suite:
 
 ```bash
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Run the linter:
+
+```bash
+uv run ruff check .
 ```
 
 The command exits with `0` when all detected `Co-authored-by` trailers are valid, `1` when validation issues are found, and `2` when the input cannot be read.

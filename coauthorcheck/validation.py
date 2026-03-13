@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from coauthorcheck.config import Config, DEFAULT_CONFIG
 from coauthorcheck.models import Trailer, ValidationIssue, ValidationResult
 from coauthorcheck.parser import extract_coauthor_trailers
 
@@ -15,11 +16,11 @@ def _build_issue(code: str, message: str, line_number: int) -> ValidationIssue:
     return ValidationIssue(code=code, message=message, line_number=line_number)
 
 
-def validate_trailer(trailer: Trailer) -> list[ValidationIssue]:
+def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     match = NAME_EMAIL_PATTERN.match(trailer.value)
 
-    if trailer.token != COAUTHOR_TOKEN:
+    if config.rules.incorrect_casing and trailer.token != COAUTHOR_TOKEN:
         issues.append(
             _build_issue(
                 "incorrect-casing",
@@ -29,15 +30,16 @@ def validate_trailer(trailer: Trailer) -> list[ValidationIssue]:
         )
 
     if match is None:
-        issues.append(
-            _build_issue(
-                "invalid-format",
-                "Trailer must use the format 'Co-authored-by: Full Name <email@example.com>'.",
-                trailer.line_number,
+        if config.rules.invalid_format:
+            issues.append(
+                _build_issue(
+                    "invalid-format",
+                    "Trailer must use the format 'Co-authored-by: Full Name <email@example.com>'.",
+                    trailer.line_number,
+                )
             )
-        )
 
-        if "<" not in trailer.value or ">" not in trailer.value:
+        if config.rules.missing_email and ("<" not in trailer.value or ">" not in trailer.value):
             issues.append(
                 _build_issue(
                     "missing-email",
@@ -46,7 +48,9 @@ def validate_trailer(trailer: Trailer) -> list[ValidationIssue]:
                 )
             )
 
-        if trailer.value.startswith("<") or not trailer.value.split("<", 1)[0].strip():
+        if config.rules.missing_name and (
+            trailer.value.startswith("<") or not trailer.value.split("<", 1)[0].strip()
+        ):
             issues.append(
                 _build_issue(
                     "missing-name",
@@ -61,21 +65,23 @@ def validate_trailer(trailer: Trailer) -> list[ValidationIssue]:
     email = match.group("email").strip()
 
     if not name:
-        issues.append(
-            _build_issue(
-                "missing-name",
-                "Trailer is missing the author name before the email address.",
-                trailer.line_number,
+        if config.rules.missing_name:
+            issues.append(
+                _build_issue(
+                    "missing-name",
+                    "Trailer is missing the author name before the email address.",
+                    trailer.line_number,
+                )
             )
-        )
-        issues.append(
-            _build_issue(
-                "invalid-format",
-                "Trailer must use the format 'Co-authored-by: Full Name <email@example.com>'.",
-                trailer.line_number,
+        if config.rules.invalid_format:
+            issues.append(
+                _build_issue(
+                    "invalid-format",
+                    "Trailer must use the format 'Co-authored-by: Full Name <email@example.com>'.",
+                    trailer.line_number,
+                )
             )
-        )
-    elif GITHUB_HANDLE_PATTERN.match(name):
+    elif config.rules.github_handle and GITHUB_HANDLE_PATTERN.match(name):
         issues.append(
             _build_issue(
                 "github-handle",
@@ -83,7 +89,7 @@ def validate_trailer(trailer: Trailer) -> list[ValidationIssue]:
                 trailer.line_number,
             )
         )
-    elif len(name.split()) == 1:
+    elif config.rules.single_word_name and len(name.split()) == 1:
         issues.append(
             _build_issue(
                 "single-word-name",
@@ -92,7 +98,7 @@ def validate_trailer(trailer: Trailer) -> list[ValidationIssue]:
             )
         )
 
-    if not email:
+    if config.rules.missing_email and not email:
         issues.append(
             _build_issue(
                 "missing-email",
@@ -100,7 +106,7 @@ def validate_trailer(trailer: Trailer) -> list[ValidationIssue]:
                 trailer.line_number,
             )
         )
-    elif not EMAIL_PATTERN.match(email):
+    elif config.rules.malformed_email and not EMAIL_PATTERN.match(email):
         issues.append(
             _build_issue(
                 "malformed-email",
@@ -112,11 +118,11 @@ def validate_trailer(trailer: Trailer) -> list[ValidationIssue]:
     return _dedupe_issues(issues)
 
 
-def validate_message(source: str, message: str) -> ValidationResult:
+def validate_message(source: str, message: str, config: Config = DEFAULT_CONFIG) -> ValidationResult:
     issues: list[ValidationIssue] = []
 
     for trailer in extract_coauthor_trailers(message):
-        issues.extend(validate_trailer(trailer))
+        issues.extend(validate_trailer(trailer, config=config))
 
     return ValidationResult(source=source, issues=_dedupe_issues(issues))
 

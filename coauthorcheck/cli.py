@@ -7,6 +7,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from coauthorcheck.config import ConfigError, load_config
 from coauthorcheck.git_utils import GitError, read_commit_message, read_commit_range
 from coauthorcheck.models import CommitMessage, ValidationResult
 from coauthorcheck.validation import validate_message
@@ -124,9 +125,19 @@ def run(
             help="Read commit messages from a git revision range, for example HEAD~5..HEAD.",
         ),
     ] = None,
+    config_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--config",
+            help="Path to a configuration file. Supports .coauthorcheck.toml or pyproject.toml.",
+        ),
+    ] = None,
 ) -> None:
     try:
+        config = load_config(config_path=config_path)
         messages = load_messages(input_value, file_path, commit, commit_range)
+    except ConfigError as error:
+        _fail(str(error))
     except ValueError as error:
         _fail(str(error))
     except FileNotFoundError as error:
@@ -136,7 +147,7 @@ def run(
     except OSError as error:
         _fail(f"unable to read input: {error}")
 
-    results = [validate_message(message.source, message.message) for message in messages]
+    results = [validate_message(message.source, message.message, config=config) for message in messages]
 
     for result in results:
         render_result(result)
