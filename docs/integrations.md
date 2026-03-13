@@ -13,13 +13,22 @@ Add this to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/simoncraf/coauthorcheck
-    rev: v0.1.0
+    rev: v0.2.0
     hooks:
       - id: coauthorcheck
         stages: [commit-msg]
 ```
 
 This validates the commit message being created.
+
+Install the hook with:
+
+```bash
+pre-commit install --hook-type commit-msg
+```
+
+The `commit-msg` hook type is required here. A normal `pre-commit install` is not enough on its own.
+This is necessary because `coauthorcheck` validates the final commit message file, and `commit-msg` is the Git hook that receives that file.
 
 ### Option 2: Local hook
 
@@ -37,6 +46,15 @@ repos:
 ```
 
 Use `language: system` only if your environment already provides the `coauthorcheck` command.
+
+Install the hook with:
+
+```bash
+pre-commit install --hook-type commit-msg
+```
+
+In both examples above, `pre-commit` passes the commit message file path automatically to the hook.
+This is why `commit-msg` is the correct hook type for commit message validation.
 
 ## GitHub Actions
 
