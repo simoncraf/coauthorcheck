@@ -4,6 +4,8 @@ from pathlib import Path
 from unittest.mock import patch
 import os
 import json
+import subprocess
+import sys
 
 from typer.testing import CliRunner
 
@@ -209,6 +211,21 @@ class CliTests(unittest.TestCase):
         self.assertEqual(payload["status"], "error")
         self.assertEqual(payload["error"]["message"], "current directory is not a git repository.")
         self.assertIn("commit message file path", payload["error"]["hint"])
+
+    def test_module_exit_code_is_nonzero_for_validation_failures(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "COMMIT_MSG"
+            path.write_text("Initial commit\n\nCo-authored-by: @simoncraf\n", encoding="utf-8")
+
+            completed = subprocess.run(
+                [sys.executable, "-m", "coauthorcheck", str(path)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("invalid-format", completed.stdout)
 
 
 if __name__ == "__main__":

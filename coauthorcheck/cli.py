@@ -4,6 +4,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Sequence
 
+import click
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -226,7 +227,7 @@ def run(
 
 def main(argv: Sequence[str] | None = None) -> int:
     try:
-        app(args=list(argv) if argv is not None else None, standalone_mode=False)
-    except typer.Exit as error:
+        result = app(args=list(argv) if argv is not None else None, standalone_mode=False)
+    except (typer.Exit, click.exceptions.Exit) as error:
         return int(error.exit_code)
-    return 0
+    return int(result) if isinstance(result, int) else 0
