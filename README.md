@@ -173,5 +173,3 @@ Run the linter:
 ```bash
 uv run ruff check .
 ```
-
-The command exits with `0` when all detected `Co-authored-by` trailers are valid, `1` when validation issues are found, and `2` when the input cannot be read.
