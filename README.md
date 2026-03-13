@@ -88,7 +88,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install coauthorcheck
-        run: pip install coauthorcheck==0.2.1
+        run: pip install coauthorcheck==0.3.0
 
       - name: Validate branch commits
         run: coauthorcheck "origin/main..HEAD"
@@ -118,7 +118,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install coauthorcheck
-        run: pip install coauthorcheck==0.2.1
+        run: pip install coauthorcheck==0.3.0
 
       - name: Validate PR commits
         run: coauthorcheck "origin/${{ github.base_ref }}..HEAD"
