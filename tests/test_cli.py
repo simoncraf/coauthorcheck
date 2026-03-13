@@ -6,6 +6,7 @@ from unittest.mock import patch
 from typer.testing import CliRunner
 
 from coauthorcheck.cli import app
+from coauthorcheck.git_utils import GitError
 from coauthorcheck.models import CommitMessage
 
 runner = CliRunner()
@@ -78,6 +79,36 @@ class CliTests(unittest.TestCase):
         result = runner.invoke(app, ["HEAD", "--commit", "HEAD"])
         self.assertEqual(result.exit_code, 2)
         self.assertIn("Provide either a positional input or an explicit flag", result.output)
+
+    def test_invalid_range_gets_actionable_hint(self) -> None:
+        error = GitError(
+            message="unable to resolve revision range 'HEAD~5..HEAD'.",
+            hint=(
+                "Try a smaller range like 'HEAD~1..HEAD', or validate only commits introduced by "
+                "your branch with 'main..HEAD' or 'origin/main..HEAD'."
+            ),
+        )
+
+        with patch("coauthorcheck.cli.read_commit_range", side_effect=error):
+            result = runner.invoke(app, ["HEAD~5..HEAD"])
+
+        self.assertEqual(result.exit_code, 2)
+        self.assertIn("unable to resolve revision range 'HEAD~5..HEAD'.", result.output)
+        self.assertIn("main..HEAD", result.output)
+
+    def test_not_a_repository_error_gets_file_hint(self) -> None:
+        error = GitError(
+            message="current directory is not a git repository.",
+            hint="Run this command inside a Git repository, or pass a commit message file path instead.",
+        )
+
+        with patch("coauthorcheck.cli.read_commit_message", side_effect=error):
+            result = runner.invoke(app, ["HEAD"])
+
+        self.assertEqual(result.exit_code, 2)
+        self.assertIn("current directory is not a git repository.", result.output)
+        self.assertIn("pass a commit message file", result.output)
+        self.assertIn("path instead", result.output)
 
 
 if __name__ == "__main__":

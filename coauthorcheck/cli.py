@@ -93,6 +93,10 @@ def _fail(message: str) -> None:
     raise typer.Exit(code=2)
 
 
+def _fail_git_error(error: GitError) -> None:
+    _fail(error.message if error.hint is None else f"{error.message}\nhint: {error.hint}")
+
+
 @app.command()
 def run(
     input_value: Annotated[
@@ -128,7 +132,7 @@ def run(
     except FileNotFoundError as error:
         _fail(f"file not found: {error.filename}")
     except GitError as error:
-        _fail(f"unable to read commit messages from git: {error}")
+        _fail_git_error(error)
     except OSError as error:
         _fail(f"unable to read input: {error}")
 
