@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.2.1] - 2026-03-13
+
+### Fixed
+
+- Strip Git comment and help lines from commit message files before parsing trailers.
+- Ensure invalid `Co-authored-by` trailers fail consistently in `commit-msg` hooks for editor-based `git commit` flows.
+
 ## [0.2.0] - 2026-03-13
 
 ### Added
