@@ -47,7 +47,7 @@ Add this to `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/simoncraf/coauthorcheck
-    rev: v0.2.1
+    rev: v0.3.0
     hooks:
       - id: coauthorcheck
         stages: [commit-msg]
