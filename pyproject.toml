@@ -1,0 +1,19 @@
+[project]
+name = "coauthorcheck"
+version = "0.1.0"
+description = "Validate Co-authored-by trailers in commit messages."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "rich>=14.3.3",
+    "typer>=0.24.1",
+]
+
+[project.scripts]
+coauthorcheck = "coauthorcheck.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.15.6",
+]
