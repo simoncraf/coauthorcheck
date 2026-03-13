@@ -1,0 +1,8 @@
+- id: coauthorcheck
+  name: coauthorcheck
+  description: Validate Co-authored-by trailers in a commit message.
+  entry: coauthorcheck
+  language: python
+  stages: [commit-msg]
+  pass_filenames: true
+  minimum_pre_commit_version: "3.0.0"

@@ -1,0 +1,23 @@
+name: Validate Co-authored-by trailers
+
+on:
+  pull_request:
+
+jobs:
+  validate-commits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install coauthorcheck
+        run: pip install coauthorcheck
+
+      - name: Validate PR commits
+        run: coauthorcheck "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"

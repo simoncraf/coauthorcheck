@@ -106,6 +106,7 @@ coauthorcheck --config .coauthorcheck.toml main..HEAD
 Unknown rule names or non-boolean values are treated as configuration errors.
 
 See [RULES.md](RULES.md) for a detailed explanation of each rule.
+See [docs/integrations.md](docs/integrations.md) for `pre-commit` and GitHub Actions examples.
 
 ## Installation
 
