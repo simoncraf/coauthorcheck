@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 import os
+import json
 
 from typer.testing import CliRunner
 
@@ -41,6 +42,22 @@ class CliTests(unittest.TestCase):
         self.assertIn("OK", result.stdout)
         self.assertIn("Summary: PASS", result.stdout)
 
+    def test_json_output_for_valid_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "COMMIT_MSG"
+            path.write_text("Subject\n\nCo-authored-by: Jane Doe <jane@example.com>\n", encoding="utf-8")
+
+            result = runner.invoke(app, ["--format", "json", "--file", str(path)])
+
+        self.assertEqual(result.exit_code, 0)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["status"], "pass")
+        self.assertEqual(payload["summary"]["commit_count"], 1)
+        self.assertEqual(payload["summary"]["invalid_commit_count"], 0)
+        self.assertEqual(payload["results"][0]["source"], str(path))
+        self.assertTrue(payload["results"][0]["is_valid"])
+        self.assertEqual(payload["results"][0]["issues"], [])
+
     def test_commit_range_failure_exit_code(self) -> None:
         commits = [
             CommitMessage(source="a1b2c3", message="Subject\n\nCo-authored-by: Jane Doe <jane@example.com>\n"),
@@ -55,6 +72,27 @@ class CliTests(unittest.TestCase):
         self.assertIn("Issues d4e5f6", result.stdout)
         self.assertIn("malformed-email", result.stdout)
         self.assertIn("Summary: FAIL", result.stdout)
+
+    def test_json_output_for_invalid_range(self) -> None:
+        commits = [
+            CommitMessage(source="a1b2c3", message="Subject\n\nCo-authored-by: Jane Doe <jane@example.com>\n"),
+            CommitMessage(source="d4e5f6", message="Subject\n\nCo-authored-by: @octocat <octocat>\n"),
+        ]
+
+        with patch("coauthorcheck.cli.read_commit_range", return_value=commits):
+            result = runner.invoke(app, ["--format", "json", "--range", "HEAD~1..HEAD"])
+
+        self.assertEqual(result.exit_code, 1)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["status"], "fail")
+        self.assertEqual(payload["summary"]["commit_count"], 2)
+        self.assertEqual(payload["summary"]["invalid_commit_count"], 1)
+        self.assertEqual(payload["summary"]["issue_count"], 2)
+        self.assertEqual(payload["results"][0]["issue_count"], 0)
+        self.assertEqual(payload["results"][1]["source"], "d4e5f6")
+        self.assertFalse(payload["results"][1]["is_valid"])
+        self.assertIn("malformed-email", [issue["code"] for issue in payload["results"][1]["issues"]])
+        self.assertIn("github-handle", [issue["code"] for issue in payload["results"][1]["issues"]])
 
     def test_positional_range_input_is_detected(self) -> None:
         commits = [
@@ -156,6 +194,21 @@ class CliTests(unittest.TestCase):
         self.assertIn("current directory is not a git repository.", result.output)
         self.assertIn("pass a commit message file", result.output)
         self.assertIn("path instead", result.output)
+
+    def test_json_error_output_for_git_failure(self) -> None:
+        error = GitError(
+            message="current directory is not a git repository.",
+            hint="Run this command inside a Git repository, or pass a commit message file path instead.",
+        )
+
+        with patch("coauthorcheck.cli.read_commit_message", side_effect=error):
+            result = runner.invoke(app, ["--format", "json", "HEAD"])
+
+        self.assertEqual(result.exit_code, 2)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["status"], "error")
+        self.assertEqual(payload["error"]["message"], "current directory is not a git repository.")
+        self.assertIn("commit message file path", payload["error"]["hint"])
 
 
 if __name__ == "__main__":

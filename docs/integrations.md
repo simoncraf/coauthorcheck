@@ -72,6 +72,13 @@ jobs:
         run: coauthorcheck "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
 ```
 
+If you want machine-readable output for later processing, use JSON:
+
+```yaml
+- name: Validate PR commits
+  run: coauthorcheck --format json "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+```
+
 ### Validate commits introduced by a branch push
 
 Example:
@@ -139,6 +146,67 @@ In hooks and CI:
 - `0`: validation passed
 - `1`: validation issues were found
 - `2`: execution, Git, or configuration error
+
+## JSON Output
+
+Use `--format json` when another tool or workflow needs structured results:
+
+```bash
+coauthorcheck --format json main..HEAD
+```
+
+Output shape:
+
+```json
+{
+  "status": "pass",
+  "summary": {
+    "commit_count": 1,
+    "invalid_commit_count": 0,
+    "issue_count": 0
+  },
+  "results": [
+    {
+      "source": "abc123",
+      "is_valid": true,
+      "issue_count": 0,
+      "issues": []
+    }
+  ]
+}
+```
+
+When validation issues are found:
+
+- `status` becomes `"fail"`
+- `invalid_commit_count` is greater than `0`
+- each invalid result includes an `issues` list with:
+  - `code`
+  - `message`
+  - `line_number`
+
+When execution fails, `coauthorcheck` emits an error payload:
+
+```json
+{
+  "status": "error",
+  "error": {
+    "message": "current directory is not a git repository.",
+    "hint": "Run this command inside a Git repository, or pass a commit message file path instead."
+  }
+}
+```
+
+## Pull Request Commenting
+
+JSON output makes it possible to comment on pull requests with a workflow script.
+
+See [examples/github-actions/pr-comment.yml](../examples/github-actions/pr-comment.yml) for a complete example that:
+
+- runs `coauthorcheck --format json`
+- fails when invalid trailers are found
+- upserts a single pull request comment summarizing the failures
+- removes the previous bot comment again once validation passes
 
 ## Future Integration Work
 

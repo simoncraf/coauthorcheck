@@ -126,6 +126,7 @@ Unknown rule names or non-boolean values are treated as configuration errors.
 
 See [docs/rules.md](docs/rules.md) for a detailed explanation of each rule.
 See [docs/integrations.md](docs/integrations.md) for `pre-commit` and GitHub Actions examples.
+Use `coauthorcheck --format json ...` for machine-readable output in CI and automation.
 
 ## Installation
 

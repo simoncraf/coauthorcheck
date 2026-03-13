@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Sequence
 
@@ -20,6 +22,11 @@ app = typer.Typer(
 )
 console = Console()
 error_console = Console(stderr=True)
+
+
+class OutputFormat(StrEnum):
+    TEXT = "text"
+    JSON = "json"
 
 
 def load_messages(
@@ -89,13 +96,62 @@ def render_summary(results: list[ValidationResult]) -> None:
     )
 
 
-def _fail(message: str) -> None:
+def _serialize_results(results: list[ValidationResult]) -> dict:
+    commit_count = len(results)
+    invalid_count = sum(not result.is_valid for result in results)
+    issue_count = sum(len(result.issues) for result in results)
+    status = "pass" if invalid_count == 0 else "fail"
+    return {
+        "status": status,
+        "summary": {
+            "commit_count": commit_count,
+            "invalid_commit_count": invalid_count,
+            "issue_count": issue_count,
+        },
+        "results": [
+            {
+                "source": result.source,
+                "is_valid": result.is_valid,
+                "issue_count": len(result.issues),
+                "issues": [
+                    {
+                        "code": issue.code,
+                        "message": issue.message,
+                        "line_number": issue.line_number,
+                    }
+                    for issue in result.issues
+                ],
+            }
+            for result in results
+        ],
+    }
+
+
+def render_json(results: list[ValidationResult]) -> None:
+    console.print_json(data=_serialize_results(results))
+
+
+def _fail(message: str, output_format: OutputFormat = OutputFormat.TEXT, hint: str | None = None) -> None:
+    if output_format == OutputFormat.JSON:
+        payload = {
+            "status": "error",
+            "error": {
+                "message": message,
+            },
+        }
+        if hint is not None:
+            payload["error"]["hint"] = hint
+        console.print_json(data=payload)
+        raise typer.Exit(code=2)
+
     error_console.print(f"[red]error:[/red] {message}")
+    if hint is not None:
+        error_console.print(f"hint: {hint}")
     raise typer.Exit(code=2)
 
 
-def _fail_git_error(error: GitError) -> None:
-    _fail(error.message if error.hint is None else f"{error.message}\nhint: {error.hint}")
+def _fail_git_error(error: GitError, output_format: OutputFormat) -> None:
+    _fail(error.message, output_format=output_format, hint=error.hint)
 
 
 @app.command()
@@ -132,27 +188,38 @@ def run(
             help="Path to a configuration file. Supports .coauthorcheck.toml or pyproject.toml.",
         ),
     ] = None,
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option(
+            "--format",
+            help="Output format for validation results.",
+            case_sensitive=False,
+        ),
+    ] = OutputFormat.TEXT,
 ) -> None:
     try:
         config = load_config(config_path=config_path)
         messages = load_messages(input_value, file_path, commit, commit_range)
     except ConfigError as error:
-        _fail(str(error))
+        _fail(str(error), output_format=output_format)
     except ValueError as error:
-        _fail(str(error))
+        _fail(str(error), output_format=output_format)
     except FileNotFoundError as error:
-        _fail(f"file not found: {error.filename}")
+        _fail(f"file not found: {error.filename}", output_format=output_format)
     except GitError as error:
-        _fail_git_error(error)
+        _fail_git_error(error, output_format=output_format)
     except OSError as error:
-        _fail(f"unable to read input: {error}")
+        _fail(f"unable to read input: {error}", output_format=output_format)
 
     results = [validate_message(message.source, message.message, config=config) for message in messages]
 
-    for result in results:
-        render_result(result)
+    if output_format == OutputFormat.JSON:
+        render_json(results)
+    else:
+        for result in results:
+            render_result(result)
 
-    render_summary(results)
+        render_summary(results)
 
     if any(not result.is_valid for result in results):
         raise typer.Exit(code=1)
