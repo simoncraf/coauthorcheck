@@ -13,7 +13,7 @@ Add this to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/simoncraf/coauthorcheck
-    rev: v0.2.1
+    rev: v0.3.0
     hooks:
       - id: coauthorcheck
         stages: [commit-msg]
@@ -86,7 +86,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install coauthorcheck
-        run: pip install coauthorcheck==0.2.1
+        run: pip install coauthorcheck==0.3.0
 
       - name: Validate PR commits
         run: coauthorcheck "origin/${{ github.base_ref }}..HEAD"
@@ -126,7 +126,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install coauthorcheck
-        run: pip install coauthorcheck==0.2.1
+        run: pip install coauthorcheck==0.3.0
 
       - name: Validate branch commits
         run: coauthorcheck "origin/main..HEAD"

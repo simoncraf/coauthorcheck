@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.3.0] - 2026-03-13
+
+### Added
+
+- Suggested fix output for invalid `Co-authored-by` trailers in both text and JSON modes.
+- Merged trailer suggestions so multiple validation issues on one trailer point to a single corrected line.
+
+### Changed
+
+- Improved README and integration examples around `pre-commit`, GitHub Actions, installation, and common workflows.
+
 ## [0.2.1] - 2026-03-13
 
 ### Fixed
