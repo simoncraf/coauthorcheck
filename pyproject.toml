@@ -1,13 +1,30 @@
 [project]
 name = "coauthorcheck"
 version = "0.1.0"
-description = "Validate Co-authored-by trailers in commit messages."
-readme = "README.md"
-requires-python = ">=3.12"
 dependencies = [
     "rich>=14.3.3",
     "typer>=0.24.1",
 ]
+description = "Validate Co-authored-by trailers in commit messages."
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+  { name = "Simone Gigante Gassó", email = "simonegigante17@gmail.com"}
+]
+license = "MIT"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Version Control :: Git",
+  "Environment :: Console",
+]
+
+[project.urls]
+Homepage = "https://github.com/simoncraf/coauthorcheck"
+Repository = "https://github.com/simoncraf/coauthorcheck.git"
+Issues = "https://github.com/simoncraf/coauthorcheck/issues"
 
 [project.scripts]
 coauthorcheck = "coauthorcheck.cli:main"
