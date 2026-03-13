@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.2.0] - 2026-03-13
+
+### Added
+
+- Machine-readable JSON output via `--format json` for CI and automation workflows.
+- GitHub Actions example for pull request commenting driven by JSON output.
+- Integration documentation for `pre-commit`, branch validation, pull request validation, and automation use cases.
+- Example documentation under `examples/` to explain how each workflow example works and when to use it.
+- Project README improvements including installation guidance, logo, and badges.
+
+### Changed
+
+- Improved pull request comment workflow behavior to update a single bot comment instead of creating duplicates.
+
 ## [0.1.0] - 2026-03-13
 
 ### Added
