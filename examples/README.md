@@ -13,15 +13,16 @@ Use this when you want a simple failing check on pull requests.
 What it does:
 
 - checks out the full Git history
-- installs `coauthorcheck`
+- installs a pinned `coauthorcheck` release
 - validates the commits introduced by the pull request using:
-  - `${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}`
+  - `origin/${{ github.base_ref }}..HEAD`
 - fails the workflow if invalid trailers are found
 
 Use this when:
 
 - you only need a pass/fail signal
 - you do not want workflow logic for comments or richer reporting
+- you want a workflow you can narrow to a single test branch with `if: github.head_ref == 'your-branch'`
 
 ### `branch-validation.yml`
 
@@ -30,7 +31,7 @@ Use this when you want validation on branch pushes instead of only on pull reque
 What it does:
 
 - checks out the repository with full history
-- installs `coauthorcheck`
+- installs a pinned `coauthorcheck` release
 - validates the commits introduced by the current branch relative to `origin/main`
 
 Use this when:

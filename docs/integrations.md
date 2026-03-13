@@ -65,10 +65,12 @@ The most common CI usage is validating the commits introduced by a branch or pul
 Example:
 
 ```yaml
-name: Validate Co-authored-by trailers
+name: Validate Co-authored-by trailers on PR
 
 on:
   pull_request:
+    branches:
+      - main
 
 jobs:
   validate-commits:
@@ -84,10 +86,10 @@ jobs:
           python-version: "3.13"
 
       - name: Install coauthorcheck
-        run: pip install coauthorcheck
+        run: pip install coauthorcheck==0.2.1
 
       - name: Validate PR commits
-        run: coauthorcheck "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+        run: coauthorcheck "origin/${{ github.base_ref }}..HEAD"
 ```
 
 If you want machine-readable output for later processing, use JSON:
@@ -107,9 +109,8 @@ name: Validate Co-authored-by trailers
 on:
   push:
     branches:
-      - main
-      - master
       - "feature/**"
+      - "feat/**"
 
 jobs:
   validate-commits:
@@ -125,13 +126,21 @@ jobs:
           python-version: "3.13"
 
       - name: Install coauthorcheck
-        run: pip install coauthorcheck
+        run: pip install coauthorcheck==0.2.1
 
-      - name: Validate commits in branch range
+      - name: Validate branch commits
         run: coauthorcheck "origin/main..HEAD"
 ```
 
 Adjust the base branch if your repository does not use `main`.
+
+For temporary testing on a single pull request branch, gate the job with a branch condition:
+
+```yaml
+jobs:
+  validate-commits:
+    if: github.head_ref == 'feature/coauthorcheck-test-pr'
+```
 
 ## Recommended CI Ranges
 

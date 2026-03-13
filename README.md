@@ -21,7 +21,112 @@
   </a>
 </p>
 
+## Table of Contents
+
+- [Usage](#usage)
+- [pre-commit](#pre-commit)
+- [GitHub Actions](#github-actions)
+- [CLI](#cli)
+- [Installation](#installation)
+- [Common CLI Workflows](#common-cli-workflows)
+- [Configuration](#configuration)
+- [Development](#development)
+
 ## Usage
+
+You can use `coauthorcheck` in one of these three ways:
+
+- as a `pre-commit` `commit-msg` hook for immediate local feedback
+- in GitHub Actions to validate branch or pull request commits before merge
+- directly from CLI
+
+### pre-commit
+
+Add this to `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/simoncraf/coauthorcheck
+    rev: v0.2.1
+    hooks:
+      - id: coauthorcheck
+        stages: [commit-msg]
+```
+
+Then install the hook:
+
+```bash
+pre-commit install --hook-type commit-msg
+```
+
+This is required because `coauthorcheck` validates the final commit message file, and `commit-msg` is the Git hook that receives that file.
+
+### GitHub Actions
+
+Validate commits introduced by branch pushes:
+
+```yaml
+name: Validate Co-authored-by trailers
+
+on:
+  push:
+    branches:
+      - "feature/**"
+      - "feat/**"
+
+jobs:
+  validate-commits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install coauthorcheck
+        run: pip install coauthorcheck==0.2.1
+
+      - name: Validate branch commits
+        run: coauthorcheck "origin/main..HEAD"
+```
+
+Validate commits introduced by a pull request:
+
+```yaml
+name: Validate Co-authored-by trailers on PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate-commits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install coauthorcheck
+        run: pip install coauthorcheck==0.2.1
+
+      - name: Validate PR commits
+        run: coauthorcheck "origin/${{ github.base_ref }}..HEAD"
+```
+
+See [docs/integrations.md](docs/integrations.md) for local hooks, JSON output, PR comments, and more workflow examples.
+
+### CLI
 
 ```bash
 coauthorcheck .git/COMMIT_EDITMSG
@@ -48,7 +153,33 @@ Check the installed CLI:
 coauthorcheck --help
 ```
 
-## Common Workflows
+## Installation
+
+Install from PyPI:
+
+```bash
+pip install coauthorcheck
+```
+
+Or with `uv`:
+
+```bash
+uv tool install coauthorcheck
+```
+
+Or with `pipx`:
+
+```bash
+pipx install coauthorcheck
+```
+
+After installation, run:
+
+```bash
+coauthorcheck --help
+```
+
+## Common CLI Workflows
 
 Validate the commit message currently being edited:
 
@@ -125,44 +256,18 @@ coauthorcheck --config .coauthorcheck.toml main..HEAD
 Unknown rule names or non-boolean values are treated as configuration errors.
 
 See [docs/rules.md](docs/rules.md) for a detailed explanation of each rule.
-See [docs/integrations.md](docs/integrations.md) for `pre-commit` and GitHub Actions examples.
+See [docs/integrations.md](docs/integrations.md) for `pre-commit`, GitHub Actions, JSON output, and PR comment examples.
 Use `coauthorcheck --format json ...` for machine-readable output in CI and automation.
 
-## Installation
+## Development
 
-Install from PyPI:
-
-```bash
-pip install coauthorcheck
-```
-
-Or with `uv`:
-
-```bash
-uv tool install coauthorcheck
-```
-
-Or with `pipx`:
-
-```bash
-pipx install coauthorcheck
-```
-
-After installation, run:
-
-```bash
-coauthorcheck --help
-```
-
-## Local Development
-
-For local development in this repo:
+Set up the local environment:
 
 ```bash
 uv sync
 ```
 
-Run from the project virtualenv:
+Run the CLI from the project environment:
 
 ```bash
 uv run coauthorcheck --help
@@ -180,8 +285,6 @@ In Git Bash, use `/c/...` style paths:
 ```bash
 /path/to/coauthorcheck/.venv/Scripts/coauthorcheck.exe main..HEAD
 ```
-
-## Development
 
 Run the test suite:
 

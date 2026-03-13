@@ -3,9 +3,8 @@ name: Validate Co-authored-by trailers
 on:
   push:
     branches:
-      - main
-      - master
       - "feature/**"
+      - "feat/**"
 
 jobs:
   validate-commits:
@@ -21,7 +20,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install coauthorcheck
-        run: pip install coauthorcheck
+        run: pip install coauthorcheck==0.2.1
 
       - name: Validate branch commits
         run: coauthorcheck "origin/main..HEAD"
