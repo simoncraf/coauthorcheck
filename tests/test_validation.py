@@ -1,9 +1,41 @@
 import unittest
 
-from coauthorcheck.validation import validate_message
+from coauthorcheck.validation import (
+    EMAIL_PATTERN,
+    GITHUB_HANDLE_PATTERN,
+    NAME_EMAIL_PATTERN,
+    validate_message,
+)
 
 
 class ValidationTests(unittest.TestCase):
+    def test_name_email_pattern_matches_valid_name_and_email(self) -> None:
+        match = NAME_EMAIL_PATTERN.match("Jane Doe <jane@example.com>")
+
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertEqual(match.group("name"), "Jane Doe")
+        self.assertEqual(match.group("email"), "jane@example.com")
+
+    def test_name_email_pattern_rejects_missing_angle_brackets(self) -> None:
+        self.assertIsNone(NAME_EMAIL_PATTERN.match("Jane Doe jane@example.com"))
+
+    def test_email_pattern_accepts_standard_email(self) -> None:
+        self.assertIsNotNone(EMAIL_PATTERN.match("jane.doe@example.com"))
+
+    def test_email_pattern_rejects_malformed_email(self) -> None:
+        self.assertIsNone(EMAIL_PATTERN.match("octocat"))
+        self.assertIsNone(EMAIL_PATTERN.match("jane@@example.com"))
+        self.assertIsNone(EMAIL_PATTERN.match("jane @example.com"))
+
+    def test_github_handle_pattern_accepts_handle_like_names(self) -> None:
+        self.assertIsNotNone(GITHUB_HANDLE_PATTERN.match("@octocat"))
+        self.assertIsNotNone(GITHUB_HANDLE_PATTERN.match("@octo-cat"))
+
+    def test_github_handle_pattern_rejects_regular_names(self) -> None:
+        self.assertIsNone(GITHUB_HANDLE_PATTERN.match("Jane Doe"))
+        self.assertIsNone(GITHUB_HANDLE_PATTERN.match("octocat"))
+
     def test_message_without_coauthor_trailers_is_valid(self) -> None:
         result = validate_message(
             "commit0",
