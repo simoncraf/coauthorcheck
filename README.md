@@ -23,6 +23,12 @@ Positional input is auto-detected in this order:
 
 Use the explicit flags when you want fully unambiguous scripting.
 
+Check the installed CLI:
+
+```bash
+coauthorcheck --help
+```
+
 ## Common Workflows
 
 Validate the commit message currently being edited:
@@ -102,6 +108,32 @@ Unknown rule names or non-boolean values are treated as configuration errors.
 See [RULES.md](RULES.md) for a detailed explanation of each rule.
 
 ## Installation
+
+Install from PyPI:
+
+```bash
+pip install coauthorcheck
+```
+
+Or with `uv`:
+
+```bash
+uv tool install coauthorcheck
+```
+
+Or with `pipx`:
+
+```bash
+pipx install coauthorcheck
+```
+
+After installation, run:
+
+```bash
+coauthorcheck --help
+```
+
+## Local Development
 
 For local development in this repo:
 
