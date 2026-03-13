@@ -36,6 +36,7 @@ coauthorcheck = "coauthorcheck.cli:main"
 dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.6",
+    "twine>=6.2.0",
 ]
 
 [build-system]
