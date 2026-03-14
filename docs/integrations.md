@@ -67,9 +67,8 @@ The most common CI usage is validating the commits introduced by a branch or pul
 Example:
 
 ```yaml
-- uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+- uses: simoncraf/coauthorcheck-action@v0.2.0
   with:
-    package-version: "0.5.0"
     range: origin/main..HEAD
 ```
 
@@ -104,9 +103,8 @@ jobs:
           fetch-depth: 0
 
       - name: Validate PR commits
-        uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+        uses: simoncraf/coauthorcheck-action@v0.2.0
         with:
-          package-version: "0.5.0"
           range: origin/${{ github.base_ref }}..HEAD
 ```
 
@@ -114,9 +112,8 @@ If you want machine-readable output for later processing, use JSON:
 
 ```yaml
 - name: Validate PR commits
-  uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+  uses: simoncraf/coauthorcheck-action@v0.2.0
   with:
-    package-version: "0.5.0"
     format: json
     range: origin/${{ github.base_ref }}..HEAD
 ```
@@ -144,9 +141,8 @@ jobs:
           fetch-depth: 0
 
       - name: Validate branch commits
-        uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+        uses: simoncraf/coauthorcheck-action@v0.2.0
         with:
-          package-version: "0.5.0"
           range: origin/main..HEAD
 ```
 

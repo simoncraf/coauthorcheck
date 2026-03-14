@@ -15,7 +15,6 @@ jobs:
           fetch-depth: 0
 
       - name: Validate PR commits
-        uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+        uses: simoncraf/coauthorcheck-action@v0.2.0
         with:
-          package-version: "0.5.0"
           range: origin/${{ github.base_ref }}..HEAD

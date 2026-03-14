@@ -68,11 +68,13 @@ This is required because `coauthorcheck` validates the final commit message file
 The easiest GitHub integration is the reusable composite action:
 
 ```yaml
-- uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+- uses: simoncraf/coauthorcheck-action@v0.2.0
   with:
-    package-version: "0.5.0"
     range: origin/main..HEAD
 ```
+
+You can also install it from GitHub Marketplace:
+[coauthorcheck Marketplace Action](https://github.com/marketplace/actions/coauthorcheck)
 
 Validate commits introduced by branch pushes:
 
@@ -95,9 +97,8 @@ jobs:
           fetch-depth: 0
 
       - name: Validate branch commits
-        uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+        uses: simoncraf/coauthorcheck-action@v0.2.0
         with:
-          package-version: "0.5.0"
           range: origin/main..HEAD
 ```
 
@@ -121,9 +122,8 @@ jobs:
           fetch-depth: 0
 
       - name: Validate PR commits
-        uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+        uses: simoncraf/coauthorcheck-action@v0.2.0
         with:
-          package-version: "0.5.0"
           range: origin/${{ github.base_ref }}..HEAD
 ```
 
