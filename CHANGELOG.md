@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.5.0] - 2026-03-14
+
+### Added
+
+- Reusable composite GitHub Action for validating commit ranges with `coauthorcheck`.
+
+### Changed
+
+- Updated GitHub Actions examples to use the reusable action for pull request and branch validation.
+- Expanded the integrations and examples documentation to describe the action inputs and usage.
+
 ## [0.4.0] - 2026-03-14
 
 ### Changed
