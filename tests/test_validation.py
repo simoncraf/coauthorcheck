@@ -1,6 +1,6 @@
 import unittest
 
-from coauthorcheck.config import Config, RuleConfig
+from coauthorcheck.config import Config, RuleConfig, Severity
 from coauthorcheck.validation import (
     EMAIL_PATTERN,
     GITHUB_HANDLE_PATTERN,
@@ -151,6 +151,23 @@ class ValidationTests(unittest.TestCase):
         )
 
         self.assertNotIn("github-handle", [issue.code for issue in result.issues])
+
+    def test_warning_severity_does_not_invalidate_result(self) -> None:
+        result = validate_message(
+            "commit8",
+            "Subject\n\nCo-authored-by: @octocat <octocat@example.com>\n",
+            config=Config(
+                rules=RuleConfig(
+                    github_handle="warning",
+                    single_word_name=False,
+                )
+            ),
+        )
+
+        self.assertTrue(result.is_valid)
+        self.assertEqual(result.error_count, 0)
+        self.assertEqual(result.warning_count, 1)
+        self.assertEqual(result.issues[0].severity, Severity.WARNING)
 
 
 if __name__ == "__main__":

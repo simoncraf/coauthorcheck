@@ -230,13 +230,13 @@ Example using `pyproject.toml`:
 
 ```toml
 [tool.coauthorcheck.rules]
-single_word_name = false
-github_handle = true
-incorrect_casing = true
-invalid_format = true
-malformed_email = true
-missing_email = true
-missing_name = true
+single_word_name = "warning"
+github_handle = "warning"
+incorrect_casing = "error"
+invalid_format = "error"
+malformed_email = "error"
+missing_email = "error"
+missing_name = "error"
 ```
 
 Example using `.coauthorcheck.toml`:
@@ -244,12 +244,12 @@ Example using `.coauthorcheck.toml`:
 ```toml
 [rules]
 single_word_name = false
-github_handle = false
-incorrect_casing = true
-invalid_format = true
-malformed_email = true
-missing_email = true
-missing_name = true
+github_handle = "warning"
+incorrect_casing = "error"
+invalid_format = "error"
+malformed_email = "error"
+missing_email = "error"
+missing_name = "error"
 ```
 
 Use an explicit config file with:
@@ -258,7 +258,15 @@ Use an explicit config file with:
 coauthorcheck --config .coauthorcheck.toml main..HEAD
 ```
 
-Unknown rule names or non-boolean values are treated as configuration errors.
+Rule values can be:
+
+- `false`: disable the rule
+- `true` or `"error"`: enable the rule as an error
+- `"warning"`: enable the rule as a warning
+
+Only error-level issues fail the command with exit code `1`. Warnings are reported but do not fail the run.
+
+Unknown rule names or invalid values are treated as configuration errors.
 
 See [docs/rules.md](docs/rules.md) for a detailed explanation of each rule.
 See [docs/integrations.md](docs/integrations.md) for `pre-commit`, GitHub Actions, JSON output, and PR comment examples.

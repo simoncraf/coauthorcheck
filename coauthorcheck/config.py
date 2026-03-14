@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
+from enum import StrEnum
 from pathlib import Path
 import tomllib
 
@@ -9,15 +10,44 @@ class ConfigError(ValueError):
     """Raised when configuration cannot be parsed."""
 
 
+class Severity(StrEnum):
+    ERROR = "error"
+    WARNING = "warning"
+
+
+def _normalize_rule_value(value: object) -> Severity | None:
+    if value is True:
+        return Severity.ERROR
+    if value is False:
+        return None
+    if isinstance(value, Severity):
+        return value
+    if isinstance(value, str):
+        normalized = value.lower()
+        if normalized == Severity.ERROR:
+            return Severity.ERROR
+        if normalized == Severity.WARNING:
+            return Severity.WARNING
+    raise ValueError(f"Invalid rule value: {value!r}")
+
+
 @dataclass(slots=True)
 class RuleConfig:
-    github_handle: bool = True
-    incorrect_casing: bool = True
-    invalid_format: bool = True
-    malformed_email: bool = True
-    missing_email: bool = True
-    missing_name: bool = True
-    single_word_name: bool = True
+    github_handle: Severity | bool | str | None = Severity.ERROR
+    incorrect_casing: Severity | bool | str | None = Severity.ERROR
+    invalid_format: Severity | bool | str | None = Severity.ERROR
+    malformed_email: Severity | bool | str | None = Severity.ERROR
+    missing_email: Severity | bool | str | None = Severity.ERROR
+    missing_name: Severity | bool | str | None = Severity.ERROR
+    single_word_name: Severity | bool | str | None = Severity.ERROR
+
+    def __post_init__(self) -> None:
+        for field in fields(type(self)):
+            normalized = _normalize_rule_value(getattr(self, field.name))
+            setattr(self, field.name, normalized)
+
+    def severity_for(self, rule_name: str) -> Severity | None:
+        return getattr(self, rule_name)
 
 
 @dataclass(slots=True)
@@ -75,10 +105,19 @@ def _parse_config(data: dict, path: Path) -> Config:
         names = ", ".join(unknown_rule_names)
         raise ConfigError(f"Unknown rule setting(s) in {path}: {names}.")
 
-    rule_values: dict[str, bool] = {}
+    rule_values: dict[str, bool | str] = {}
     for name, value in rules_data.items():
-        if not isinstance(value, bool):
-            raise ConfigError(f"Rule setting '{name}' in {path} must be a boolean.")
+        if not isinstance(value, (bool, str)):
+            raise ConfigError(
+                f"Rule setting '{name}' in {path} must be a boolean or one of: 'error', 'warning'."
+            )
+        if isinstance(value, str) and value.lower() not in {Severity.ERROR, Severity.WARNING}:
+            raise ConfigError(
+                f"Rule setting '{name}' in {path} must be a boolean or one of: 'error', 'warning'."
+            )
         rule_values[name] = value
 
-    return Config(rules=RuleConfig(**rule_values))
+    try:
+        return Config(rules=RuleConfig(**rule_values))
+    except ValueError as error:
+        raise ConfigError(f"Invalid configuration in {path}: {error}") from error

@@ -9,7 +9,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from coauthorcheck.config import ConfigError, load_config
+from coauthorcheck.config import ConfigError, Severity, load_config
 from coauthorcheck.git_utils import GitError, clean_commit_message_text, read_commit_message, read_commit_range
 from coauthorcheck.models import CommitMessage, ValidationResult
 from coauthorcheck.validation import validate_message
@@ -79,14 +79,18 @@ def detect_input_kind(value: str) -> str:
 
 
 def render_result(result: ValidationResult) -> None:
-    if result.is_valid:
+    if not result.issues:
         console.print(f"[green]OK[/green] {result.source}")
         return
 
-    console.print(f"[red]Issues[/red] {result.source} ({len(result.issues)})")
+    label = "[red]Issues[/red]"
+    if result.is_valid and result.warning_count > 0:
+        label = "[yellow]Warnings[/yellow]"
+    console.print(f"{label} {result.source} ({len(result.issues)})")
     has_suggestions = any(issue.suggestion for issue in result.issues)
     table = Table(show_header=True, header_style="bold")
     table.add_column("Line", style="cyan", justify="right", no_wrap=True)
+    table.add_column("Severity", no_wrap=True)
     table.add_column("Code", style="magenta", no_wrap=True)
     table.add_column("Message", style="white")
     if has_suggestions:
@@ -94,7 +98,8 @@ def render_result(result: ValidationResult) -> None:
 
     shown_suggestion_lines: set[int] = set()
     for issue in result.issues:
-        row = [str(issue.line_number), issue.code, issue.message]
+        severity = "error" if issue.severity == Severity.ERROR else "warning"
+        row = [str(issue.line_number), severity, issue.code, issue.message]
         if has_suggestions:
             suggestion = ""
             if issue.suggestion and issue.line_number not in shown_suggestion_lines:
@@ -109,11 +114,16 @@ def render_result(result: ValidationResult) -> None:
 def render_summary(results: list[ValidationResult]) -> None:
     commit_count = len(results)
     invalid_count = sum(not result.is_valid for result in results)
+    warning_commit_count = sum(result.warning_count > 0 and result.is_valid for result in results)
     issue_count = sum(len(result.issues) for result in results)
+    error_count = sum(result.error_count for result in results)
+    warning_count = sum(result.warning_count for result in results)
     status = "[green]PASS[/green]" if invalid_count == 0 else "[red]FAIL[/red]"
     console.print(
         f"Summary: {status} - checked {commit_count} commit(s), "
-        f"{invalid_count} commit(s) with issues, {issue_count} total issue(s)"
+        f"{invalid_count} commit(s) with errors, "
+        f"{warning_commit_count} commit(s) with warnings, "
+        f"{issue_count} total issue(s) ({error_count} error(s), {warning_count} warning(s))"
     )
 
 
@@ -121,24 +131,33 @@ def _serialize_results(results: list[ValidationResult]) -> dict:
     commit_count = len(results)
     invalid_count = sum(not result.is_valid for result in results)
     issue_count = sum(len(result.issues) for result in results)
+    error_count = sum(result.error_count for result in results)
+    warning_count = sum(result.warning_count for result in results)
+    warning_commit_count = sum(result.warning_count > 0 and result.is_valid for result in results)
     status = "pass" if invalid_count == 0 else "fail"
     return {
         "status": status,
         "summary": {
             "commit_count": commit_count,
             "invalid_commit_count": invalid_count,
+            "warning_commit_count": warning_commit_count,
             "issue_count": issue_count,
+            "error_count": error_count,
+            "warning_count": warning_count,
         },
         "results": [
             {
                 "source": result.source,
                 "is_valid": result.is_valid,
                 "issue_count": len(result.issues),
+                "error_count": result.error_count,
+                "warning_count": result.warning_count,
                 "issues": [
                     {
                         "code": issue.code,
                         "message": issue.message,
                         "line_number": issue.line_number,
+                        "severity": issue.severity,
                         "suggestion": issue.suggestion,
                     }
                     for issue in result.issues
@@ -243,7 +262,7 @@ def run(
 
         render_summary(results)
 
-    if any(not result.is_valid for result in results):
+    if any(result.error_count > 0 for result in results):
         raise typer.Exit(code=1)
 
 

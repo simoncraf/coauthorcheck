@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from coauthorcheck.config import Severity
+
 
 @dataclass(slots=True)
 class CommitMessage:
@@ -22,6 +24,7 @@ class ValidationIssue:
     code: str
     message: str
     line_number: int
+    severity: Severity = Severity.ERROR
     suggestion: str | None = None
 
 
@@ -32,4 +35,12 @@ class ValidationResult:
 
     @property
     def is_valid(self) -> bool:
-        return not self.issues
+        return self.error_count == 0
+
+    @property
+    def error_count(self) -> int:
+        return sum(issue.severity == Severity.ERROR for issue in self.issues)
+
+    @property
+    def warning_count(self) -> int:
+        return sum(issue.severity == Severity.WARNING for issue in self.issues)

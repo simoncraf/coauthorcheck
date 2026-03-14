@@ -180,6 +180,8 @@ You can also pass an explicit config file:
   run: coauthorcheck --config .coauthorcheck.toml origin/main..HEAD
 ```
 
+Rule values may be set to `false`, `true`, `"error"`, or `"warning"`. Warning-level rules are reported in output but do not fail the command.
+
 ## Exit Codes
 
 In hooks and CI:
@@ -187,6 +189,8 @@ In hooks and CI:
 - `0`: validation passed
 - `1`: validation issues were found
 - `2`: execution, Git, or configuration error
+
+Only error-level issues trigger exit code `1`. Warning-only results still exit successfully.
 
 ## JSON Output
 
@@ -225,6 +229,7 @@ When validation issues are found:
   - `code`
   - `message`
   - `line_number`
+  - `severity`
   - `suggestion`
 
 When multiple issues affect the same trailer, `coauthorcheck` merges them into one canonical suggested trailer line. In text output that suggestion is shown once for the trailer; in JSON the related issues share the same `suggestion` value.

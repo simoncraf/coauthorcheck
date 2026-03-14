@@ -11,9 +11,15 @@ Example:
 
 ```toml
 [tool.coauthorcheck.rules]
-single_word_name = false
-github_handle = true
+single_word_name = "warning"
+github_handle = "error"
 ```
+
+Each rule accepts one of these values:
+
+- `false`: disable the rule
+- `true` or `"error"`: enable the rule as an error
+- `"warning"`: enable the rule as a warning
 
 ## incorrect_casing
 

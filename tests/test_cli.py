@@ -60,6 +60,56 @@ class CliTests(unittest.TestCase):
         self.assertTrue(payload["results"][0]["is_valid"])
         self.assertEqual(payload["results"][0]["issues"], [])
 
+    def test_warning_only_file_passes_with_warning_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            path = root / "COMMIT_MSG"
+            config_path = root / ".coauthorcheck.toml"
+            path.write_text(
+                "Subject\n\nCo-authored-by: @octocat <octocat@example.com>\n",
+                encoding="utf-8",
+            )
+            config_path.write_text(
+                "[rules]\n"
+                "github_handle = 'warning'\n"
+                "single_word_name = false\n",
+                encoding="utf-8",
+            )
+
+            result = runner.invoke(app, ["--config", str(config_path), "--file", str(path)])
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("Warnings", result.stdout)
+        self.assertIn("warning", result.stdout)
+        self.assertIn("Summary: PASS", result.stdout)
+
+    def test_json_output_includes_warning_severity_and_pass_status(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            path = root / "COMMIT_MSG"
+            config_path = root / ".coauthorcheck.toml"
+            path.write_text(
+                "Subject\n\nCo-authored-by: @octocat <octocat@example.com>\n",
+                encoding="utf-8",
+            )
+            config_path.write_text(
+                "[rules]\n"
+                "github_handle = 'warning'\n"
+                "single_word_name = false\n",
+                encoding="utf-8",
+            )
+
+            result = runner.invoke(app, ["--format", "json", "--config", str(config_path), "--file", str(path)])
+
+        self.assertEqual(result.exit_code, 0)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["status"], "pass")
+        self.assertEqual(payload["summary"]["invalid_commit_count"], 0)
+        self.assertEqual(payload["summary"]["warning_commit_count"], 1)
+        self.assertEqual(payload["summary"]["warning_count"], 1)
+        self.assertEqual(payload["results"][0]["warning_count"], 1)
+        self.assertEqual(payload["results"][0]["issues"][0]["severity"], "warning")
+
     def test_file_input_strips_git_comment_lines_before_validation(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "COMMIT_MSG"
@@ -75,9 +125,11 @@ class CliTests(unittest.TestCase):
         self.assertEqual(result.exit_code, 1)
         self.assertIn("invalid-format", result.stdout)
         self.assertIn("missing-email", result.stdout)
-        self.assertIn("Add an email address in", result.stdout)
-        self.assertIn("angle brackets", result.stdout)
+        self.assertIn("Add an email", result.stdout)
+        self.assertIn("address in angle", result.stdout)
+        self.assertIn("brackets", result.stdout)
         self.assertIn("example", result.stdout)
+        self.assertIn("Severity", result.stdout)
         self.assertIn("Suggestion", result.stdout)
         self.assertIn("Co-authored-by:", result.stdout)
         self.assertIn("@simoncraf", result.stdout)

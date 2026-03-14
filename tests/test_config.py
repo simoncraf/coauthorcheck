@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from coauthorcheck.config import ConfigError, load_config
+from coauthorcheck.config import ConfigError, Severity, load_config
 
 
 class ConfigTests(unittest.TestCase):
@@ -78,3 +78,30 @@ class ConfigTests(unittest.TestCase):
                 load_config(config_path=path)
 
         self.assertIn("Unknown rule setting", str(context.exception))
+
+    def test_string_warning_rule_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[rules]\n"
+                "github_handle = 'warning'\n",
+                encoding="utf-8",
+            )
+
+            config = load_config(config_path=path)
+
+        self.assertEqual(config.rules.github_handle, Severity.WARNING)
+
+    def test_invalid_rule_string_raises_config_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[rules]\n"
+                "github_handle = 'maybe'\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigError) as context:
+                load_config(config_path=path)
+
+        self.assertIn("must be a boolean or one of: 'error', 'warning'", str(context.exception))

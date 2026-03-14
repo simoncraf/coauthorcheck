@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from coauthorcheck.config import Config, DEFAULT_CONFIG
+from coauthorcheck.config import Config, DEFAULT_CONFIG, Severity
 from coauthorcheck.models import Trailer, ValidationIssue, ValidationResult
 from coauthorcheck.parser import extract_coauthor_trailers
 
@@ -17,9 +17,16 @@ def _build_issue(
     code: str,
     message: str,
     line_number: int,
+    severity: Severity,
     suggestion: str | None = None,
 ) -> ValidationIssue:
-    return ValidationIssue(code=code, message=message, line_number=line_number, suggestion=suggestion)
+    return ValidationIssue(
+        code=code,
+        message=message,
+        line_number=line_number,
+        severity=severity,
+        suggestion=suggestion,
+    )
 
 
 def _suggested_trailer(name: str | None = None, email: str | None = None) -> str:
@@ -83,35 +90,42 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
     issues: list[ValidationIssue] = []
     match = NAME_EMAIL_PATTERN.match(trailer.value)
 
-    if config.rules.incorrect_casing and trailer.token != COAUTHOR_TOKEN:
+    severity = config.rules.severity_for("incorrect_casing")
+    if severity and trailer.token != COAUTHOR_TOKEN:
         issues.append(
             _build_issue(
                 "incorrect-casing",
                 f"Use the exact trailer token '{COAUTHOR_TOKEN}'.",
                 trailer.line_number,
+                severity=severity,
             )
         )
 
     if match is None:
-        if config.rules.invalid_format:
+        severity = config.rules.severity_for("invalid_format")
+        if severity:
             issues.append(
                 _build_issue(
                     "invalid-format",
                     "Trailer must use the format 'Co-authored-by: Full Name <email@example.com>'.",
                     trailer.line_number,
+                    severity=severity,
                 )
             )
 
-        if config.rules.missing_email and ("<" not in trailer.value or ">" not in trailer.value):
+        severity = config.rules.severity_for("missing_email")
+        if severity and ("<" not in trailer.value or ">" not in trailer.value):
             issues.append(
                 _build_issue(
                     "missing-email",
                     "Add an email address in angle brackets, for example <email@example.com>.",
                     trailer.line_number,
+                    severity=severity,
                 )
             )
 
-        if config.rules.missing_name and (
+        severity = config.rules.severity_for("missing_name")
+        if severity and (
             trailer.value.startswith("<") or not trailer.value.split("<", 1)[0].strip()
         ):
             issues.append(
@@ -119,6 +133,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
                     "missing-name",
                     "Add the author name before the email address.",
                     trailer.line_number,
+                    severity=severity,
                 )
             )
 
@@ -128,55 +143,70 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
     email = match.group("email").strip()
 
     if not name:
-        if config.rules.missing_name:
+        severity = config.rules.severity_for("missing_name")
+        if severity:
             issues.append(
                 _build_issue(
                     "missing-name",
                     "Add the author name before the email address.",
                     trailer.line_number,
+                    severity=severity,
                 )
             )
-        if config.rules.invalid_format:
+        severity = config.rules.severity_for("invalid_format")
+        if severity:
             issues.append(
                 _build_issue(
                     "invalid-format",
                     "Trailer must use the format 'Co-authored-by: Full Name <email@example.com>'.",
                     trailer.line_number,
+                    severity=severity,
                 )
             )
-    elif config.rules.github_handle and GITHUB_HANDLE_PATTERN.match(name):
-        issues.append(
-            _build_issue(
-                "github-handle",
-                "Use a full name instead of a GitHub handle in the trailer.",
-                trailer.line_number,
+    else:
+        severity = config.rules.severity_for("github_handle")
+        if severity and GITHUB_HANDLE_PATTERN.match(name):
+            issues.append(
+                _build_issue(
+                    "github-handle",
+                    "Use a full name instead of a GitHub handle in the trailer.",
+                    trailer.line_number,
+                    severity=severity,
+                )
             )
-        )
-    elif config.rules.single_word_name and len(name.split()) == 1:
-        issues.append(
-            _build_issue(
-                "single-word-name",
-                "Use at least a first and last name in the trailer.",
-                trailer.line_number,
-            )
-        )
+        else:
+            severity = config.rules.severity_for("single_word_name")
+            if severity and len(name.split()) == 1:
+                issues.append(
+                    _build_issue(
+                        "single-word-name",
+                        "Use at least a first and last name in the trailer.",
+                        trailer.line_number,
+                        severity=severity,
+                    )
+                )
 
-    if config.rules.missing_email and not email:
+    severity = config.rules.severity_for("missing_email")
+    if severity and not email:
         issues.append(
             _build_issue(
                 "missing-email",
                 "Add an email address in angle brackets, for example <email@example.com>.",
                 trailer.line_number,
+                severity=severity,
             )
         )
-    elif config.rules.malformed_email and not EMAIL_PATTERN.match(email):
-        issues.append(
-            _build_issue(
-                "malformed-email",
-                "Use a valid email address in angle brackets.",
-                trailer.line_number,
+    else:
+        severity = config.rules.severity_for("malformed_email")
+        if severity and not EMAIL_PATTERN.match(email):
+            issues.append(
+                _build_issue(
+                    "malformed-email",
+                    "Use a valid email address in angle brackets.",
+                    trailer.line_number,
+                    severity=severity,
+                )
             )
-        )
 
     return _apply_suggestion(_dedupe_issues(issues), trailer)
 
