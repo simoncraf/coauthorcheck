@@ -203,6 +203,30 @@ class EndToEndIntegrationTests(unittest.TestCase):
         self.assertEqual(issue["severity"], "error")
         self.assertEqual(issue["suggestion"], "Co-authored-by: Jane Doe <jane@example.com>")
 
+    def test_blocked_email_domain_policy_fails_in_real_repo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Path(tmpdir)
+            init_repo(repo)
+            (repo / ".coauthorcheck.toml").write_text(
+                "[rules]\n"
+                "email_domain = 'error'\n"
+                "[policy]\n"
+                "blocked_email_domains = ['users.noreply.github.com']\n",
+                encoding="utf-8",
+            )
+            empty_commit(
+                repo,
+                "Blocked domain commit\n\nCo-authored-by: Jane Doe <jane@users.noreply.github.com>",
+            )
+
+            completed = run_cli(["--format", "json", "HEAD"], cwd=repo)
+
+        self.assertEqual(completed.returncode, 1)
+        payload = json.loads(completed.stdout)
+        issue = payload["results"][0]["issues"][0]
+        self.assertEqual(issue["code"], "email-domain")
+        self.assertIsNone(issue["suggestion"])
+
     def test_email_domain_rule_without_policy_is_config_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Path(tmpdir)
@@ -222,6 +246,7 @@ class EndToEndIntegrationTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 2)
         self.assertIn("rules.email_domain", completed.stderr)
         self.assertIn("allowed_email_domains", completed.stderr)
+        self.assertIn("blocked_email_domains", completed.stderr)
 
 
 if __name__ == "__main__":

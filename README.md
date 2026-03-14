@@ -242,6 +242,7 @@ email_domain = "error"
 [tool.coauthorcheck.policy]
 minimum_name_parts = 2
 allowed_email_domains = ["example.com"]
+blocked_email_domains = ["users.noreply.github.com"]
 ```
 
 Example using `.coauthorcheck.toml`:
@@ -260,6 +261,7 @@ email_domain = "error"
 [policy]
 minimum_name_parts = 1
 allowed_email_domains = ["example.com"]
+blocked_email_domains = ["users.noreply.github.com"]
 ```
 
 Use an explicit config file with:
@@ -274,7 +276,7 @@ Rule values can be:
 - `true` or `"error"`: enable the rule as an error
 - `"warning"`: enable the rule as a warning
 
-`email_domain` is a special policy rule. If you enable it, you must also configure `allowed_email_domains` under `[tool.coauthorcheck.policy]` in `pyproject.toml` or under `[policy]` in `.coauthorcheck.toml`.
+`email_domain` is a special policy rule. If you enable it, you must also configure `allowed_email_domains`, `blocked_email_domains`, or both under `[tool.coauthorcheck.policy]` in `pyproject.toml` or under `[policy]` in `.coauthorcheck.toml`.
 
 `name_parts` uses the `minimum_name_parts` policy value. The default is `2`, which preserves the current "first and last name" behavior. Set `minimum_name_parts = 1` to relax the rule, or a higher value such as `3` to require more name parts.
 
@@ -288,15 +290,17 @@ name_parts = "error"
 [tool.coauthorcheck.policy]
 minimum_name_parts = 3
 allowed_email_domains = ["example.com", "company.com"]
+blocked_email_domains = ["users.noreply.github.com"]
 ```
 
 With that configuration:
 
 - co-author names must contain at least three parts
 - emails from the listed domains are allowed
+- emails from blocked domains are rejected
 - emails from other domains produce an `email-domain` issue
 - if exactly one allowed domain is configured, `coauthorcheck` can suggest a corrected email domain
-- enabling `email_domain` without `allowed_email_domains` is a configuration error
+- enabling `email_domain` without `allowed_email_domains` or `blocked_email_domains` is a configuration error
 
 Only error-level issues fail the command with exit code `1`. Warnings are reported but do not fail the run.
 

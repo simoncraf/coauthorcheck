@@ -102,9 +102,32 @@ def _suggest_email_for_allowed_domain(
     return None
 
 
+def _email_domain_issue(name: str, email: str, line_number: int, config: Config) -> ValidationIssue:
+    suggestion = None
+    suggested_email = _suggest_email_for_allowed_domain(email, config.allowed_email_domains)
+    if suggested_email is not None:
+        suggestion = _suggested_trailer(name=name, email=suggested_email)
+
+    return _build_issue(
+        "email-domain",
+        "Use an email address from an allowed, non-blocked domain.",
+        line_number,
+        severity=config.rules.severity_for("email_domain"),
+        suggestion=suggestion,
+    )
+
+
 def _apply_suggestion(issues: list[ValidationIssue], trailer: Trailer, config: Config) -> list[ValidationIssue]:
     if not issues:
         return issues
+
+    if not any(issue.suggestion for issue in issues):
+        issue_codes = {issue.code for issue in issues}
+        if issue_codes == {"email-domain"} and _suggest_email_for_allowed_domain(
+            _extract_trailer_parts(trailer)[1],
+            config.allowed_email_domains,
+        ) is None:
+            return issues
 
     suggestion = _merged_suggestion(trailer, {issue.code for issue in issues}, config)
     for issue in issues:
@@ -243,22 +266,14 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
             )
         else:
             severity = config.rules.severity_for("email_domain")
-            if severity and config.allowed_email_domains:
+            if severity and (config.allowed_email_domains or config.blocked_email_domains):
                 domain = email.rsplit("@", 1)[1].lower()
-                if domain not in config.allowed_email_domains:
-                    suggestion = None
-                    suggested_email = _suggest_email_for_allowed_domain(email, config.allowed_email_domains)
-                    if suggested_email is not None:
-                        suggestion = _suggested_trailer(name=name, email=suggested_email)
-                    issues.append(
-                        _build_issue(
-                            "email-domain",
-                            "Use an email address from an allowed domain.",
-                            trailer.line_number,
-                            severity=severity,
-                            suggestion=suggestion,
-                        )
-                    )
+                violates_allowed_domains = bool(
+                    config.allowed_email_domains and domain not in config.allowed_email_domains
+                )
+                violates_blocked_domains = domain in config.blocked_email_domains
+                if violates_allowed_domains or violates_blocked_domains:
+                    issues.append(_email_domain_issue(name, email, trailer.line_number, config))
 
     return _apply_suggestion(_dedupe_issues(issues), trailer, config)
 

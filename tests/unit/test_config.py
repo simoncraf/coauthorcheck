@@ -120,6 +120,23 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.allowed_email_domains, ("example.com", "company.com"))
         self.assertEqual(str(config.rules.email_domain), "error")
 
+    def test_blocked_email_domains_are_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[policy]\n"
+                "blocked_email_domains = ['users.noreply.github.com', 'tempmail.com']\n",
+                encoding="utf-8",
+            )
+
+            config = load_config(config_path=path)
+
+        self.assertEqual(
+            config.blocked_email_domains,
+            ("users.noreply.github.com", "tempmail.com"),
+        )
+        self.assertEqual(str(config.rules.email_domain), "error")
+
     def test_minimum_name_parts_is_loaded(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / ".coauthorcheck.toml"
@@ -175,4 +192,19 @@ class ConfigTests(unittest.TestCase):
             with self.assertRaises(ConfigError) as context:
                 load_config(config_path=path)
 
-        self.assertIn("requires 'policy.allowed_email_domains' to be set", str(context.exception))
+        self.assertIn("requires 'policy.allowed_email_domains' or 'policy.blocked_email_domains'", str(context.exception))
+
+    def test_blocked_email_domains_must_be_a_string_array(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[policy]\n"
+                "blocked_email_domains = 'users.noreply.github.com'\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigError) as context:
+                load_config(config_path=path)
+
+        self.assertIn("'policy.blocked_email_domains'", str(context.exception))
+        self.assertIn("must be an array of strings", str(context.exception))

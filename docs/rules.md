@@ -18,6 +18,7 @@ email_domain = "error"
 [tool.coauthorcheck.policy]
 minimum_name_parts = 2
 allowed_email_domains = ["example.com"]
+blocked_email_domains = ["users.noreply.github.com"]
 ```
 
 Each rule accepts one of these values:
@@ -145,7 +146,7 @@ Co-authored-by: Jane Doe <jane@@example.com>
 
 ## email_domain
 
-Checks whether the email address belongs to one of the configured allowed domains.
+Checks whether the email address belongs to an allowed domain and not to a blocked domain.
 
 Example:
 
@@ -162,14 +163,16 @@ email_domain = "error"
 [tool.coauthorcheck.policy]
 minimum_name_parts = 2
 allowed_email_domains = ["example.com", "company.com"]
+blocked_email_domains = ["users.noreply.github.com", "tempmail.com"]
 ```
 
 How it works:
 
 - if the trailer email uses one of the allowed domains, no issue is reported
+- if the trailer email uses a blocked domain, `email-domain` is reported
 - if the trailer email uses a different domain, `email-domain` is reported
 - if exactly one allowed domain is configured, `coauthorcheck` can suggest a corrected email address using that domain
-- if `email_domain` is enabled but `allowed_email_domains` is missing, configuration loading fails with an error
+- if `email_domain` is enabled but both `allowed_email_domains` and `blocked_email_domains` are missing, configuration loading fails with an error
 
 ## Notes
 

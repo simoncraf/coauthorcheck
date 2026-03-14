@@ -57,6 +57,7 @@ class RuleConfig:
 class Config:
     rules: RuleConfig
     allowed_email_domains: tuple[str, ...] = ()
+    blocked_email_domains: tuple[str, ...] = ()
     minimum_name_parts: int = 2
 
 
@@ -130,6 +131,9 @@ def _parse_config(data: dict, path: Path) -> Config:
         allowed_email_domains = policy_data.get("allowed_email_domains", [])
         if not isinstance(allowed_email_domains, list):
             raise ConfigError(f"'policy.allowed_email_domains' in {path} must be an array of strings.")
+        blocked_email_domains = policy_data.get("blocked_email_domains", [])
+        if not isinstance(blocked_email_domains, list):
+            raise ConfigError(f"'policy.blocked_email_domains' in {path} must be an array of strings.")
 
         normalized_domains: list[str] = []
         for domain in allowed_email_domains:
@@ -137,24 +141,32 @@ def _parse_config(data: dict, path: Path) -> Config:
                 raise ConfigError(f"'policy.allowed_email_domains' in {path} must contain non-empty strings.")
             normalized_domains.append(domain.strip().lower())
 
+        normalized_blocked_domains: list[str] = []
+        for domain in blocked_email_domains:
+            if not isinstance(domain, str) or not domain.strip():
+                raise ConfigError(f"'policy.blocked_email_domains' in {path} must contain non-empty strings.")
+            normalized_blocked_domains.append(domain.strip().lower())
+
         minimum_name_parts = policy_data.get("minimum_name_parts", 2)
         if not isinstance(minimum_name_parts, int) or isinstance(minimum_name_parts, bool):
             raise ConfigError(f"'policy.minimum_name_parts' in {path} must be an integer.")
         if minimum_name_parts < 1:
             raise ConfigError(f"'policy.minimum_name_parts' in {path} must be greater than or equal to 1.")
 
-        if normalized_domains and "email_domain" not in rule_values:
+        if (normalized_domains or normalized_blocked_domains) and "email_domain" not in rule_values:
             rule_values["email_domain"] = Severity.ERROR
 
         email_domain_severity = _normalize_rule_value(rule_values.get("email_domain"))
-        if email_domain_severity is not None and not normalized_domains:
+        if email_domain_severity is not None and not normalized_domains and not normalized_blocked_domains:
             raise ConfigError(
-                f"'rules.email_domain' in {path} requires 'policy.allowed_email_domains' to be set."
+                f"'rules.email_domain' in {path} requires 'policy.allowed_email_domains' or "
+                f"'policy.blocked_email_domains' to be set."
             )
 
         return Config(
             rules=RuleConfig(**rule_values),
             allowed_email_domains=tuple(normalized_domains),
+            blocked_email_domains=tuple(normalized_blocked_domains),
             minimum_name_parts=minimum_name_parts,
         )
     except ValueError as error:

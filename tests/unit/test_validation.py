@@ -214,7 +214,36 @@ class ValidationTests(unittest.TestCase):
 
         self.assertFalse(result.is_valid)
         self.assertEqual([issue.code for issue in result.issues], ["email-domain"])
-        self.assertEqual(result.issues[0].message, "Use an email address from an allowed domain.")
+        self.assertEqual(result.issues[0].message, "Use an email address from an allowed, non-blocked domain.")
+        self.assertEqual(result.issues[0].suggestion, "Co-authored-by: Jane Doe <jane@example.com>")
+
+    def test_blocked_email_domain_reports_issue_without_suggestion(self) -> None:
+        result = validate_message(
+            "commit10",
+            "Subject\n\nCo-authored-by: Jane Doe <jane@users.noreply.github.com>\n",
+            config=Config(
+                rules=RuleConfig(email_domain="error"),
+                blocked_email_domains=("users.noreply.github.com",),
+            ),
+        )
+
+        self.assertFalse(result.is_valid)
+        self.assertEqual([issue.code for issue in result.issues], ["email-domain"])
+        self.assertEqual(result.issues[0].message, "Use an email address from an allowed, non-blocked domain.")
+        self.assertIsNone(result.issues[0].suggestion)
+
+    def test_blocked_email_domain_can_suggest_single_allowed_domain(self) -> None:
+        result = validate_message(
+            "commit11",
+            "Subject\n\nCo-authored-by: Jane Doe <jane@users.noreply.github.com>\n",
+            config=Config(
+                rules=RuleConfig(email_domain="error"),
+                allowed_email_domains=("example.com",),
+                blocked_email_domains=("users.noreply.github.com",),
+            ),
+        )
+
+        self.assertFalse(result.is_valid)
         self.assertEqual(result.issues[0].suggestion, "Co-authored-by: Jane Doe <jane@example.com>")
 
 

@@ -190,9 +190,10 @@ email_domain = "error"
 
 [tool.coauthorcheck.policy]
 allowed_email_domains = ["example.com"]
+blocked_email_domains = ["users.noreply.github.com"]
 ```
 
-If `email_domain` is enabled without `allowed_email_domains`, `coauthorcheck` exits with a configuration error.
+You can use either `allowed_email_domains`, `blocked_email_domains`, or both. If `email_domain` is enabled without either policy, `coauthorcheck` exits with a configuration error.
 
 The `name_parts` rule is also policy-aware. It uses `minimum_name_parts`, which defaults to `2`:
 
@@ -258,7 +259,7 @@ When validation issues are found:
 
 When multiple issues affect the same trailer, `coauthorcheck` merges them into one canonical suggested trailer line. In text output that suggestion is shown once for the trailer; in JSON the related issues share the same `suggestion` value.
 
-If `email-domain` is triggered and exactly one allowed domain is configured, the suggestion also normalizes the email to that domain.
+If `email-domain` is triggered and exactly one allowed domain is configured, the suggestion also normalizes the email to that domain, even when the original domain was blocked.
 
 When execution fails, `coauthorcheck` emits an error payload:
 
