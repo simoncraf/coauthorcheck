@@ -66,6 +66,19 @@ class ValidationTests(unittest.TestCase):
         self.assertIn("incorrect-casing", codes)
         self.assertIn("github-handle", codes)
         self.assertIn("malformed-email", codes)
+        message_map = {issue.code: issue.message for issue in result.issues}
+        self.assertEqual(
+            message_map["incorrect-casing"],
+            "Use the exact trailer token 'Co-authored-by'.",
+        )
+        self.assertEqual(
+            message_map["github-handle"],
+            "Use a full name instead of a GitHub handle in the trailer.",
+        )
+        self.assertEqual(
+            message_map["malformed-email"],
+            "Use a valid email address in angle brackets.",
+        )
         suggestions = {issue.suggestion for issue in result.issues}
         self.assertEqual(
             suggestions,
@@ -82,6 +95,11 @@ class ValidationTests(unittest.TestCase):
 
         self.assertIn("invalid-format", codes)
         self.assertIn("missing-name", codes)
+        message_map = {issue.code: issue.message for issue in result.issues}
+        self.assertEqual(
+            message_map["missing-name"],
+            "Add the author name before the email address.",
+        )
 
     def test_single_word_name_is_rejected(self) -> None:
         result = validate_message(
@@ -90,6 +108,11 @@ class ValidationTests(unittest.TestCase):
         )
 
         self.assertIn("single-word-name", [issue.code for issue in result.issues])
+        message_map = {issue.code: issue.message for issue in result.issues}
+        self.assertEqual(
+            message_map["single-word-name"],
+            "Use at least a first and last name in the trailer.",
+        )
 
     def test_missing_email_brackets_reports_missing_email(self) -> None:
         result = validate_message(
@@ -100,6 +123,11 @@ class ValidationTests(unittest.TestCase):
         codes = [issue.code for issue in result.issues]
         self.assertIn("invalid-format", codes)
         self.assertIn("missing-email", codes)
+        message_map = {issue.code: issue.message for issue in result.issues}
+        self.assertEqual(
+            message_map["missing-email"],
+            "Add an email address in angle brackets, for example <email@example.com>.",
+        )
         suggestions = {issue.suggestion for issue in result.issues}
         self.assertEqual(
             suggestions,

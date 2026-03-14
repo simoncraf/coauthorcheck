@@ -211,6 +211,9 @@ When validation issues are found:
   - `code`
   - `message`
   - `line_number`
+  - `suggestion`
+
+When multiple issues affect the same trailer, `coauthorcheck` merges them into one canonical suggested trailer line. In text output that suggestion is shown once for the trailer; in JSON the related issues share the same `suggestion` value.
 
 When execution fails, `coauthorcheck` emits an error payload:
 

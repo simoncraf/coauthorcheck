@@ -126,6 +126,8 @@ jobs:
 
 See [docs/integrations.md](docs/integrations.md) for local hooks, JSON output, PR comments, and more workflow examples.
 
+When validation fails, `coauthorcheck` also prints a suggested corrected trailer line. If multiple issues affect the same trailer, they are merged into one canonical fix suggestion.
+
 ### CLI
 
 ```bash
@@ -258,6 +260,7 @@ Unknown rule names or non-boolean values are treated as configuration errors.
 See [docs/rules.md](docs/rules.md) for a detailed explanation of each rule.
 See [docs/integrations.md](docs/integrations.md) for `pre-commit`, GitHub Actions, JSON output, and PR comment examples.
 Use `coauthorcheck --format json ...` for machine-readable output in CI and automation.
+JSON issue objects also include a `suggestion` field when a corrected trailer can be proposed.
 
 ## Development
 

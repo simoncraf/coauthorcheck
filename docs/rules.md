@@ -114,3 +114,4 @@ Co-authored-by: Jane Doe <jane@@example.com>
 - `coauthorcheck` only validates `Co-authored-by` trailers found in the final trailer block of the commit message.
 - Lines elsewhere in the commit body are not treated as trailers.
 - If a message has no `Co-authored-by` trailers, it is currently considered valid.
+- When a trailer is invalid, `coauthorcheck` can also emit a suggested corrected trailer line. If multiple rules fail for the same trailer, the suggestion is merged into one canonical fix.

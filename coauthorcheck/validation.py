@@ -87,7 +87,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
         issues.append(
             _build_issue(
                 "incorrect-casing",
-                f"Trailer token should be '{COAUTHOR_TOKEN}'.",
+                f"Use the exact trailer token '{COAUTHOR_TOKEN}'.",
                 trailer.line_number,
             )
         )
@@ -106,7 +106,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
             issues.append(
                 _build_issue(
                     "missing-email",
-                    "Trailer is missing an email address in angle brackets.",
+                    "Add an email address in angle brackets, for example <email@example.com>.",
                     trailer.line_number,
                 )
             )
@@ -117,7 +117,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
             issues.append(
                 _build_issue(
                     "missing-name",
-                    "Trailer is missing the author name before the email address.",
+                    "Add the author name before the email address.",
                     trailer.line_number,
                 )
             )
@@ -132,7 +132,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
             issues.append(
                 _build_issue(
                     "missing-name",
-                    "Trailer is missing the author name before the email address.",
+                    "Add the author name before the email address.",
                     trailer.line_number,
                 )
             )
@@ -148,7 +148,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
         issues.append(
             _build_issue(
                 "github-handle",
-                "Use a real name instead of a GitHub handle in the trailer.",
+                "Use a full name instead of a GitHub handle in the trailer.",
                 trailer.line_number,
             )
         )
@@ -156,7 +156,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
         issues.append(
             _build_issue(
                 "single-word-name",
-                "Author name should contain at least two words.",
+                "Use at least a first and last name in the trailer.",
                 trailer.line_number,
             )
         )
@@ -165,7 +165,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
         issues.append(
             _build_issue(
                 "missing-email",
-                "Trailer is missing an email address in angle brackets.",
+                "Add an email address in angle brackets, for example <email@example.com>.",
                 trailer.line_number,
             )
         )
@@ -173,7 +173,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
         issues.append(
             _build_issue(
                 "malformed-email",
-                "Email address is malformed.",
+                "Use a valid email address in angle brackets.",
                 trailer.line_number,
             )
         )
