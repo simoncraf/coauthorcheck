@@ -194,6 +194,18 @@ allowed_email_domains = ["example.com"]
 
 If `email_domain` is enabled without `allowed_email_domains`, `coauthorcheck` exits with a configuration error.
 
+The `name_parts` rule is also policy-aware. It uses `minimum_name_parts`, which defaults to `2`:
+
+```toml
+[tool.coauthorcheck.rules]
+name_parts = "warning"
+
+[tool.coauthorcheck.policy]
+minimum_name_parts = 3
+```
+
+With that configuration, names with fewer than three parts are reported, but only as warnings.
+
 ## Exit Codes
 
 In hooks and CI:

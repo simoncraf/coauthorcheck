@@ -101,16 +101,16 @@ class ValidationTests(unittest.TestCase):
             "Add the author name before the email address.",
         )
 
-    def test_single_word_name_is_rejected(self) -> None:
+    def test_name_parts_rule_rejects_single_word_name_by_default(self) -> None:
         result = validate_message(
             "commit4",
             "Subject\n\nCo-authored-by: Prince <prince@example.com>\n",
         )
 
-        self.assertIn("single-word-name", [issue.code for issue in result.issues])
+        self.assertIn("name-parts", [issue.code for issue in result.issues])
         message_map = {issue.code: issue.message for issue in result.issues}
         self.assertEqual(
-            message_map["single-word-name"],
+            message_map["name-parts"],
             "Use at least a first and last name in the trailer.",
         )
 
@@ -134,14 +134,14 @@ class ValidationTests(unittest.TestCase):
             {"Co-authored-by: Jane Doe <jane@example.com>"},
         )
 
-    def test_single_word_name_rule_can_be_disabled(self) -> None:
+    def test_name_parts_rule_can_be_disabled(self) -> None:
         result = validate_message(
             "commit6",
             "Subject\n\nCo-authored-by: Prince <prince@example.com>\n",
-            config=Config(rules=RuleConfig(single_word_name=False)),
+            config=Config(rules=RuleConfig(name_parts=False)),
         )
 
-        self.assertNotIn("single-word-name", [issue.code for issue in result.issues])
+        self.assertNotIn("name-parts", [issue.code for issue in result.issues])
 
     def test_github_handle_rule_can_be_disabled(self) -> None:
         result = validate_message(
@@ -152,6 +152,39 @@ class ValidationTests(unittest.TestCase):
 
         self.assertNotIn("github-handle", [issue.code for issue in result.issues])
 
+    def test_minimum_name_parts_policy_can_require_more_than_two_parts(self) -> None:
+        result = validate_message(
+            "commit7b",
+            "Subject\n\nCo-authored-by: Jane Doe <jane@example.com>\n",
+            config=Config(
+                rules=RuleConfig(name_parts="error"),
+                minimum_name_parts=3,
+            ),
+        )
+
+        self.assertEqual([issue.code for issue in result.issues], ["name-parts"])
+        self.assertEqual(
+            result.issues[0].message,
+            "Use at least 3 name parts in the trailer.",
+        )
+        self.assertEqual(
+            result.issues[0].suggestion,
+            "Co-authored-by: Jane Doe Surname <jane@example.com>",
+        )
+
+    def test_minimum_name_parts_policy_can_relax_name_requirement(self) -> None:
+        result = validate_message(
+            "commit7c",
+            "Subject\n\nCo-authored-by: Prince <prince@example.com>\n",
+            config=Config(
+                rules=RuleConfig(name_parts="error"),
+                minimum_name_parts=1,
+            ),
+        )
+
+        self.assertTrue(result.is_valid)
+        self.assertEqual(result.issues, [])
+
     def test_warning_severity_does_not_invalidate_result(self) -> None:
         result = validate_message(
             "commit8",
@@ -159,7 +192,7 @@ class ValidationTests(unittest.TestCase):
             config=Config(
                 rules=RuleConfig(
                     github_handle="warning",
-                    single_word_name=False,
+                    name_parts=False,
                 )
             ),
         )

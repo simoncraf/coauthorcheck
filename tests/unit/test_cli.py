@@ -72,7 +72,7 @@ class CliTests(unittest.TestCase):
             config_path.write_text(
                 "[rules]\n"
                 "github_handle = 'warning'\n"
-                "single_word_name = false\n",
+                "name_parts = false\n",
                 encoding="utf-8",
             )
 
@@ -95,7 +95,7 @@ class CliTests(unittest.TestCase):
             config_path.write_text(
                 "[rules]\n"
                 "github_handle = 'warning'\n"
-                "single_word_name = false\n",
+                "name_parts = false\n",
                 encoding="utf-8",
             )
 
@@ -233,7 +233,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(result.exit_code, 2)
         self.assertIn("Provide either a positional input or an explicit flag", result.output)
 
-    def test_config_can_disable_single_word_name_rule(self) -> None:
+    def test_config_can_disable_name_parts_rule(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             message_path = root / "COMMIT_MSG"
@@ -244,7 +244,7 @@ class CliTests(unittest.TestCase):
             )
             config_path.write_text(
                 "[rules]\n"
-                "single_word_name = false\n",
+                "name_parts = false\n",
                 encoding="utf-8",
             )
 
@@ -252,6 +252,32 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Summary: PASS", result.stdout)
+
+    def test_config_can_require_three_name_parts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            message_path = root / "COMMIT_MSG"
+            config_path = root / ".coauthorcheck.toml"
+            message_path.write_text(
+                "Subject\n\nCo-authored-by: Jane Doe <jane@example.com>\n",
+                encoding="utf-8",
+            )
+            config_path.write_text(
+                "[rules]\n"
+                "name_parts = 'error'\n"
+                "[policy]\n"
+                "minimum_name_parts = 3\n",
+                encoding="utf-8",
+            )
+
+            result = runner.invoke(app, ["--config", str(config_path), str(message_path)])
+
+        self.assertEqual(result.exit_code, 1)
+        self.assertIn("name-parts", result.stdout)
+        self.assertIn("Use at least 3 name", result.stdout)
+        self.assertIn("parts in the trailer.", result.stdout)
+        self.assertIn("Co-authored-by: Jane", result.stdout)
+        self.assertIn("Doe Surname", result.stdout)
 
     def test_pyproject_config_is_auto_discovered_from_parent_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -265,7 +291,7 @@ class CliTests(unittest.TestCase):
             )
             (root / "pyproject.toml").write_text(
                 "[tool.coauthorcheck.rules]\n"
-                "single_word_name = false\n",
+                "name_parts = false\n",
                 encoding="utf-8",
             )
 
@@ -344,6 +370,27 @@ class CliTests(unittest.TestCase):
         self.assertEqual(result.exit_code, 2)
         self.assertIn("'rules.email_domain'", result.output)
         self.assertIn("allowed_email_domains", result.output)
+
+    def test_config_error_when_minimum_name_parts_is_invalid(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            path = root / "COMMIT_MSG"
+            config_path = root / ".coauthorcheck.toml"
+            path.write_text(
+                "Subject\n\nCo-authored-by: Jane Doe <jane@example.com>\n",
+                encoding="utf-8",
+            )
+            config_path.write_text(
+                "[policy]\n"
+                "minimum_name_parts = 0\n",
+                encoding="utf-8",
+            )
+
+            result = runner.invoke(app, ["--config", str(config_path), "--file", str(path)])
+
+        self.assertEqual(result.exit_code, 2)
+        self.assertIn("policy.minimum_name_parts", result.output)
+        self.assertIn("greater than or equal to 1", result.output)
 
     def test_module_exit_code_is_nonzero_for_validation_failures(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

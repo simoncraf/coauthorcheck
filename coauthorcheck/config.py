@@ -41,7 +41,7 @@ class RuleConfig:
     malformed_email: Severity | bool | str | None = Severity.ERROR
     missing_email: Severity | bool | str | None = Severity.ERROR
     missing_name: Severity | bool | str | None = Severity.ERROR
-    single_word_name: Severity | bool | str | None = Severity.ERROR
+    name_parts: Severity | bool | str | None = Severity.ERROR
     email_domain: Severity | bool | str | None = None
 
     def __post_init__(self) -> None:
@@ -57,6 +57,7 @@ class RuleConfig:
 class Config:
     rules: RuleConfig
     allowed_email_domains: tuple[str, ...] = ()
+    minimum_name_parts: int = 2
 
 
 DEFAULT_CONFIG = Config(rules=RuleConfig())
@@ -136,6 +137,12 @@ def _parse_config(data: dict, path: Path) -> Config:
                 raise ConfigError(f"'policy.allowed_email_domains' in {path} must contain non-empty strings.")
             normalized_domains.append(domain.strip().lower())
 
+        minimum_name_parts = policy_data.get("minimum_name_parts", 2)
+        if not isinstance(minimum_name_parts, int) or isinstance(minimum_name_parts, bool):
+            raise ConfigError(f"'policy.minimum_name_parts' in {path} must be an integer.")
+        if minimum_name_parts < 1:
+            raise ConfigError(f"'policy.minimum_name_parts' in {path} must be greater than or equal to 1.")
+
         if normalized_domains and "email_domain" not in rule_values:
             rule_values["email_domain"] = Severity.ERROR
 
@@ -145,6 +152,10 @@ def _parse_config(data: dict, path: Path) -> Config:
                 f"'rules.email_domain' in {path} requires 'policy.allowed_email_domains' to be set."
             )
 
-        return Config(rules=RuleConfig(**rule_values), allowed_email_domains=tuple(normalized_domains))
+        return Config(
+            rules=RuleConfig(**rule_values),
+            allowed_email_domains=tuple(normalized_domains),
+            minimum_name_parts=minimum_name_parts,
+        )
     except ValueError as error:
         raise ConfigError(f"Invalid configuration in {path}: {error}") from error

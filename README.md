@@ -230,7 +230,7 @@ Example using `pyproject.toml`:
 
 ```toml
 [tool.coauthorcheck.rules]
-single_word_name = "warning"
+name_parts = "warning"
 github_handle = "warning"
 incorrect_casing = "error"
 invalid_format = "error"
@@ -240,6 +240,7 @@ missing_name = "error"
 email_domain = "error"
 
 [tool.coauthorcheck.policy]
+minimum_name_parts = 2
 allowed_email_domains = ["example.com"]
 ```
 
@@ -247,7 +248,7 @@ Example using `.coauthorcheck.toml`:
 
 ```toml
 [rules]
-single_word_name = false
+name_parts = false
 github_handle = "warning"
 incorrect_casing = "error"
 invalid_format = "error"
@@ -257,6 +258,7 @@ missing_name = "error"
 email_domain = "error"
 
 [policy]
+minimum_name_parts = 1
 allowed_email_domains = ["example.com"]
 ```
 
@@ -274,18 +276,23 @@ Rule values can be:
 
 `email_domain` is a special policy rule. If you enable it, you must also configure `allowed_email_domains` under `[tool.coauthorcheck.policy]` in `pyproject.toml` or under `[policy]` in `.coauthorcheck.toml`.
 
+`name_parts` uses the `minimum_name_parts` policy value. The default is `2`, which preserves the current "first and last name" behavior. Set `minimum_name_parts = 1` to relax the rule, or a higher value such as `3` to require more name parts.
+
 Example:
 
 ```toml
 [tool.coauthorcheck.rules]
 email_domain = "warning"
+name_parts = "error"
 
 [tool.coauthorcheck.policy]
+minimum_name_parts = 3
 allowed_email_domains = ["example.com", "company.com"]
 ```
 
 With that configuration:
 
+- co-author names must contain at least three parts
 - emails from the listed domains are allowed
 - emails from other domains produce an `email-domain` issue
 - if exactly one allowed domain is configured, `coauthorcheck` can suggest a corrected email domain

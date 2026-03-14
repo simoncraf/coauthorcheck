@@ -65,8 +65,11 @@ def _merged_suggestion(trailer: Trailer, issue_codes: set[str], config: Config) 
         name = "Full Name"
     elif "github-handle" in issue_codes:
         name = "Full Name"
-    elif "single-word-name" in issue_codes:
-        name = f"{name} Surname"
+    elif "name-parts" in issue_codes:
+        current_parts = name.split() if name else []
+        while len(current_parts) < config.minimum_name_parts:
+            current_parts.append("Surname")
+        name = " ".join(current_parts)
 
     if ("missing-email" in issue_codes and not email) or not email:
         email = "email@example.com"
@@ -107,6 +110,21 @@ def _apply_suggestion(issues: list[ValidationIssue], trailer: Trailer, config: C
     for issue in issues:
         issue.suggestion = suggestion
     return issues
+
+
+def _name_part_issue(config: Config, line_number: int) -> ValidationIssue:
+    minimum_name_parts = config.minimum_name_parts
+    code = "name-parts"
+    if minimum_name_parts == 2:
+        message = "Use at least a first and last name in the trailer."
+    else:
+        message = f"Use at least {minimum_name_parts} name parts in the trailer."
+    return _build_issue(
+        code,
+        message,
+        line_number,
+        severity=config.rules.severity_for("name_parts"),
+    )
 
 
 def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[ValidationIssue]:
@@ -198,16 +216,9 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
                 )
             )
         else:
-            severity = config.rules.severity_for("single_word_name")
-            if severity and len(name.split()) == 1:
-                issues.append(
-                    _build_issue(
-                        "single-word-name",
-                        "Use at least a first and last name in the trailer.",
-                        trailer.line_number,
-                        severity=severity,
-                    )
-                )
+            severity = config.rules.severity_for("name_parts")
+            if severity and len(name.split()) < config.minimum_name_parts:
+                issues.append(_name_part_issue(config, trailer.line_number))
 
     severity = config.rules.severity_for("missing_email")
     if severity and not email:

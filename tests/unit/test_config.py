@@ -11,13 +11,13 @@ class ConfigTests(unittest.TestCase):
             path = Path(tmpdir) / "pyproject.toml"
             path.write_text(
                 "[tool.coauthorcheck.rules]\n"
-                "single_word_name = false\n",
+                "name_parts = false\n",
                 encoding="utf-8",
             )
 
             config = load_config(config_path=path)
 
-        self.assertFalse(config.rules.single_word_name)
+        self.assertFalse(config.rules.name_parts)
 
     def test_loads_dedicated_config_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -37,18 +37,18 @@ class ConfigTests(unittest.TestCase):
             root = Path(tmpdir)
             (root / ".coauthorcheck.toml").write_text(
                 "[rules]\n"
-                "single_word_name = false\n",
+                "name_parts = false\n",
                 encoding="utf-8",
             )
             (root / "pyproject.toml").write_text(
                 "[tool.coauthorcheck.rules]\n"
-                "single_word_name = true\n",
+                "name_parts = true\n",
                 encoding="utf-8",
             )
 
             config = load_config(start_dir=root)
 
-        self.assertFalse(config.rules.single_word_name)
+        self.assertFalse(config.rules.name_parts)
 
     def test_searches_parent_directories(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -119,6 +119,49 @@ class ConfigTests(unittest.TestCase):
 
         self.assertEqual(config.allowed_email_domains, ("example.com", "company.com"))
         self.assertEqual(str(config.rules.email_domain), "error")
+
+    def test_minimum_name_parts_is_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[policy]\n"
+                "minimum_name_parts = 3\n",
+                encoding="utf-8",
+            )
+
+            config = load_config(config_path=path)
+
+        self.assertEqual(config.minimum_name_parts, 3)
+
+    def test_minimum_name_parts_must_be_an_integer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[policy]\n"
+                "minimum_name_parts = 'two'\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigError) as context:
+                load_config(config_path=path)
+
+        self.assertIn("'policy.minimum_name_parts'", str(context.exception))
+        self.assertIn("must be an integer", str(context.exception))
+
+    def test_minimum_name_parts_must_be_positive(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[policy]\n"
+                "minimum_name_parts = 0\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigError) as context:
+                load_config(config_path=path)
+
+        self.assertIn("'policy.minimum_name_parts'", str(context.exception))
+        self.assertIn("greater than or equal to 1", str(context.exception))
 
     def test_email_domain_rule_requires_allowed_domains(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -11,11 +11,12 @@ Example:
 
 ```toml
 [tool.coauthorcheck.rules]
-single_word_name = "warning"
+name_parts = "warning"
 github_handle = "error"
 email_domain = "error"
 
 [tool.coauthorcheck.policy]
+minimum_name_parts = 2
 allowed_email_domains = ["example.com"]
 ```
 
@@ -75,17 +76,40 @@ Example:
 Co-authored-by: @octocat <octocat@example.com>
 ```
 
-## single_word_name
+## name_parts
 
 Checks whether the name contains only one word.
 
-When enabled, the rule requires at least two words in the co-author name.
+When enabled, the rule requires at least `minimum_name_parts` words in the co-author name.
+If `minimum_name_parts` is not configured, the default is `2`.
 
 Example:
 
 ```text
 Co-authored-by: Prince <prince@example.com>
 ```
+
+Policy examples:
+
+```toml
+[tool.coauthorcheck.rules]
+name_parts = "error"
+
+[tool.coauthorcheck.policy]
+minimum_name_parts = 1
+```
+
+With `minimum_name_parts = 1`, a single-word name is allowed.
+
+```toml
+[tool.coauthorcheck.rules]
+name_parts = "error"
+
+[tool.coauthorcheck.policy]
+minimum_name_parts = 3
+```
+
+With `minimum_name_parts = 3`, `Jane Doe <jane@example.com>` produces a `name-parts` issue.
 
 ## missing_name
 
@@ -136,6 +160,7 @@ Configuration example:
 email_domain = "error"
 
 [tool.coauthorcheck.policy]
+minimum_name_parts = 2
 allowed_email_domains = ["example.com", "company.com"]
 ```
 

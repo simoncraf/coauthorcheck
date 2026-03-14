@@ -119,7 +119,7 @@ class EndToEndIntegrationTests(unittest.TestCase):
             (repo / ".coauthorcheck.toml").write_text(
                 "[rules]\n"
                 "github_handle = 'warning'\n"
-                "single_word_name = false\n",
+                "name_parts = false\n",
                 encoding="utf-8",
             )
             empty_commit(
@@ -131,6 +131,50 @@ class EndToEndIntegrationTests(unittest.TestCase):
 
         self.assertEqual(completed.returncode, 0)
         self.assertIn("Warnings", completed.stdout)
+        self.assertIn("Summary: PASS", completed.stdout)
+
+    def test_minimum_name_parts_policy_fails_in_real_repo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Path(tmpdir)
+            init_repo(repo)
+            (repo / ".coauthorcheck.toml").write_text(
+                "[rules]\n"
+                "name_parts = 'error'\n"
+                "[policy]\n"
+                "minimum_name_parts = 3\n",
+                encoding="utf-8",
+            )
+            empty_commit(
+                repo,
+                "Name policy commit\n\nCo-authored-by: Jane Doe <jane@example.com>",
+            )
+
+            completed = run_cli(["HEAD"], cwd=repo)
+
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("name-parts", completed.stdout)
+        self.assertIn("Use at least 3 name", completed.stdout)
+        self.assertIn("parts in the trailer.", completed.stdout)
+
+    def test_minimum_name_parts_policy_can_relax_requirement_in_real_repo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Path(tmpdir)
+            init_repo(repo)
+            (repo / ".coauthorcheck.toml").write_text(
+                "[rules]\n"
+                "name_parts = 'error'\n"
+                "[policy]\n"
+                "minimum_name_parts = 1\n",
+                encoding="utf-8",
+            )
+            empty_commit(
+                repo,
+                "Relaxed name policy\n\nCo-authored-by: Prince <prince@example.com>",
+            )
+
+            completed = run_cli(["HEAD"], cwd=repo)
+
+        self.assertEqual(completed.returncode, 0)
         self.assertIn("Summary: PASS", completed.stdout)
 
     def test_email_domain_policy_fails_in_real_repo(self) -> None:
