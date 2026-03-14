@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.4.0] - 2026-03-14
+
+### Changed
+
+- Improved validation messages to use more actionable remediation-oriented wording.
+- Expanded suggested-fix documentation across the README, integrations guide, and rules reference.
+
 ## [0.3.0] - 2026-03-13
 
 ### Added
