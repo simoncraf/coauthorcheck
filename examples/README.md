@@ -13,7 +13,7 @@ Use this when you want a simple failing check on pull requests.
 What it does:
 
 - checks out the full Git history
-- installs a pinned `coauthorcheck` release
+- uses the reusable `coauthorcheck` GitHub Action
 - validates the commits introduced by the pull request using:
   - `origin/${{ github.base_ref }}..HEAD`
 - fails the workflow if invalid trailers are found
@@ -31,7 +31,7 @@ Use this when you want validation on branch pushes instead of only on pull reque
 What it does:
 
 - checks out the repository with full history
-- installs a pinned `coauthorcheck` release
+- uses the reusable `coauthorcheck` GitHub Action
 - validates the commits introduced by the current branch relative to `origin/main`
 
 Use this when:
@@ -49,6 +49,7 @@ Use this when you want both enforcement and reviewer-friendly feedback on pull r
 
 What it does:
 
+- installs `coauthorcheck` explicitly and captures JSON output
 - runs `coauthorcheck --format json`
 - captures the tool result in `result.json`
 - posts a comment when invalid trailers are found
@@ -78,3 +79,5 @@ Move to:
 Use:
 
 - `branch-validation.yml` if your team prefers validating pushes directly on branches
+
+The validation examples are intentionally action-based. The PR comment example stays workflow-based because it needs extra JSON handling and GitHub comment logic around the raw CLI output.

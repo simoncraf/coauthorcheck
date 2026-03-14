@@ -60,6 +60,28 @@ This is why `commit-msg` is the correct hook type for commit message validation.
 
 The most common CI usage is validating the commits introduced by a branch or pull request.
 
+### Reusable GitHub Action
+
+`coauthorcheck` ships with a reusable composite action so other repositories can validate commits with a single `uses:` step.
+
+Example:
+
+```yaml
+- uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+  with:
+    package-version: "0.5.0"
+    range: origin/main..HEAD
+```
+
+Supported inputs:
+
+- `range`: required git revision range to validate
+- `package-version`: optional PyPI version to install; leave empty for the latest release
+- `config`: optional config file path
+- `format`: optional output format, `text` or `json`
+- `python-version`: optional Python version used inside the action
+- `working-directory`: optional working directory for running `coauthorcheck`
+
 ### Validate commits introduced by a pull request
 
 Example:
@@ -81,22 +103,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install coauthorcheck
-        run: pip install coauthorcheck==0.4.0
-
       - name: Validate PR commits
-        run: coauthorcheck "origin/${{ github.base_ref }}..HEAD"
+        uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+        with:
+          package-version: "0.5.0"
+          range: origin/${{ github.base_ref }}..HEAD
 ```
 
 If you want machine-readable output for later processing, use JSON:
 
 ```yaml
 - name: Validate PR commits
-  run: coauthorcheck --format json "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+  uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+  with:
+    package-version: "0.5.0"
+    format: json
+    range: origin/${{ github.base_ref }}..HEAD
 ```
 
 ### Validate commits introduced by a branch push
@@ -121,15 +143,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install coauthorcheck
-        run: pip install coauthorcheck==0.4.0
-
       - name: Validate branch commits
-        run: coauthorcheck "origin/main..HEAD"
+        uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+        with:
+          package-version: "0.5.0"
+          range: origin/main..HEAD
 ```
 
 Adjust the base branch if your repository does not use `main`.
@@ -238,6 +256,8 @@ See [examples/github-actions/pr-comment.yml](../examples/github-actions/pr-comme
 - upserts a single pull request comment summarizing the failures
 - removes the previous bot comment again once validation passes
 
+The PR comment workflow still calls the CLI directly instead of the reusable action because it needs access to the raw JSON file and custom comment-management logic.
+
 ## Future Integration Work
 
-Future releases are expected to add machine-readable output and richer pull request feedback, which will make automated PR comments easier to implement.
+Future releases are expected to improve the reusable action further and may publish it in GitHub Marketplace once the action interface is stable.

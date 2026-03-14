@@ -14,12 +14,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install coauthorcheck
-        run: pip install coauthorcheck==0.2.1
-
       - name: Validate PR commits
-        run: coauthorcheck "origin/${{ github.base_ref }}..HEAD"
+        uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+        with:
+          package-version: "0.5.0"
+          range: origin/${{ github.base_ref }}..HEAD

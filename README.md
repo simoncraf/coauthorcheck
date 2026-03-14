@@ -65,6 +65,15 @@ This is required because `coauthorcheck` validates the final commit message file
 
 ### GitHub Actions
 
+The easiest GitHub integration is the reusable composite action:
+
+```yaml
+- uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+  with:
+    package-version: "0.5.0"
+    range: origin/main..HEAD
+```
+
 Validate commits introduced by branch pushes:
 
 ```yaml
@@ -85,15 +94,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install coauthorcheck
-        run: pip install coauthorcheck==0.4.0
-
       - name: Validate branch commits
-        run: coauthorcheck "origin/main..HEAD"
+        uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+        with:
+          package-version: "0.5.0"
+          range: origin/main..HEAD
 ```
 
 Validate commits introduced by a pull request:
@@ -115,15 +120,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install coauthorcheck
-        run: pip install coauthorcheck==0.4.0
-
       - name: Validate PR commits
-        run: coauthorcheck "origin/${{ github.base_ref }}..HEAD"
+        uses: simoncraf/coauthorcheck/.github/actions/coauthorcheck@v0.5.0
+        with:
+          package-version: "0.5.0"
+          range: origin/${{ github.base_ref }}..HEAD
 ```
 
 See [docs/integrations.md](docs/integrations.md) for local hooks, JSON output, PR comments, and more workflow examples.

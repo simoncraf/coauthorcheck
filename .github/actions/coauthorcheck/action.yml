@@ -1,0 +1,55 @@
+name: coauthorcheck
+description: Validate Co-authored-by trailers in commit messages from GitHub Actions.
+inputs:
+  range:
+    description: Git revision range to validate, for example origin/main..HEAD.
+    required: true
+  config:
+    description: Optional path to a coauthorcheck config file.
+    required: false
+    default: ""
+  format:
+    description: Output format passed to coauthorcheck.
+    required: false
+    default: text
+  python-version:
+    description: Python version used to install and run coauthorcheck.
+    required: false
+    default: "3.13"
+  package-version:
+    description: PyPI package version to install. Leave empty to install the latest release.
+    required: false
+    default: ""
+  working-directory:
+    description: Working directory where coauthorcheck should run.
+    required: false
+    default: "."
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install coauthorcheck
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -n "${{ inputs.package-version }}" ]; then
+          pip install "coauthorcheck==${{ inputs.package-version }}"
+        else
+          pip install coauthorcheck
+        fi
+
+    - name: Run coauthorcheck
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        args=("--format" "${{ inputs.format }}")
+        if [ -n "${{ inputs.config }}" ]; then
+          args+=("--config" "${{ inputs.config }}")
+        fi
+        args+=("${{ inputs.range }}")
+        coauthorcheck "${args[@]}"
