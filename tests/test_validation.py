@@ -169,6 +169,21 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(result.warning_count, 1)
         self.assertEqual(result.issues[0].severity, Severity.WARNING)
 
+    def test_email_domain_policy_reports_issue_and_suggestion(self) -> None:
+        result = validate_message(
+            "commit9",
+            "Subject\n\nCo-authored-by: Jane Doe <jane@other.com>\n",
+            config=Config(
+                rules=RuleConfig(email_domain="error"),
+                allowed_email_domains=("example.com",),
+            ),
+        )
+
+        self.assertFalse(result.is_valid)
+        self.assertEqual([issue.code for issue in result.issues], ["email-domain"])
+        self.assertEqual(result.issues[0].message, "Use an email address from an allowed domain.")
+        self.assertEqual(result.issues[0].suggestion, "Co-authored-by: Jane Doe <jane@example.com>")
+
 
 if __name__ == "__main__":
     unittest.main()

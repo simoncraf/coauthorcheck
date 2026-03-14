@@ -16,6 +16,8 @@ class Severity(StrEnum):
 
 
 def _normalize_rule_value(value: object) -> Severity | None:
+    if value is None:
+        return None
     if value is True:
         return Severity.ERROR
     if value is False:
@@ -40,6 +42,7 @@ class RuleConfig:
     missing_email: Severity | bool | str | None = Severity.ERROR
     missing_name: Severity | bool | str | None = Severity.ERROR
     single_word_name: Severity | bool | str | None = Severity.ERROR
+    email_domain: Severity | bool | str | None = None
 
     def __post_init__(self) -> None:
         for field in fields(type(self)):
@@ -53,6 +56,7 @@ class RuleConfig:
 @dataclass(slots=True)
 class Config:
     rules: RuleConfig
+    allowed_email_domains: tuple[str, ...] = ()
 
 
 DEFAULT_CONFIG = Config(rules=RuleConfig())
@@ -99,6 +103,10 @@ def _parse_config(data: dict, path: Path) -> Config:
     if not isinstance(rules_data, dict):
         raise ConfigError(f"'rules' must be a table in {path}.")
 
+    policy_data = data.get("policy", {})
+    if not isinstance(policy_data, dict):
+        raise ConfigError(f"'policy' must be a table in {path}.")
+
     allowed_rule_names = {field.name for field in fields(RuleConfig)}
     unknown_rule_names = sorted(set(rules_data) - allowed_rule_names)
     if unknown_rule_names:
@@ -118,6 +126,25 @@ def _parse_config(data: dict, path: Path) -> Config:
         rule_values[name] = value
 
     try:
-        return Config(rules=RuleConfig(**rule_values))
+        allowed_email_domains = policy_data.get("allowed_email_domains", [])
+        if not isinstance(allowed_email_domains, list):
+            raise ConfigError(f"'policy.allowed_email_domains' in {path} must be an array of strings.")
+
+        normalized_domains: list[str] = []
+        for domain in allowed_email_domains:
+            if not isinstance(domain, str) or not domain.strip():
+                raise ConfigError(f"'policy.allowed_email_domains' in {path} must contain non-empty strings.")
+            normalized_domains.append(domain.strip().lower())
+
+        if normalized_domains and "email_domain" not in rule_values:
+            rule_values["email_domain"] = Severity.ERROR
+
+        email_domain_severity = _normalize_rule_value(rule_values.get("email_domain"))
+        if email_domain_severity is not None and not normalized_domains:
+            raise ConfigError(
+                f"'rules.email_domain' in {path} requires 'policy.allowed_email_domains' to be set."
+            )
+
+        return Config(rules=RuleConfig(**rule_values), allowed_email_domains=tuple(normalized_domains))
     except ValueError as error:
         raise ConfigError(f"Invalid configuration in {path}: {error}") from error

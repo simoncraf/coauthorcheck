@@ -105,3 +105,31 @@ class ConfigTests(unittest.TestCase):
                 load_config(config_path=path)
 
         self.assertIn("must be a boolean or one of: 'error', 'warning'", str(context.exception))
+
+    def test_allowed_email_domains_are_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[policy]\n"
+                "allowed_email_domains = ['example.com', 'company.com']\n",
+                encoding="utf-8",
+            )
+
+            config = load_config(config_path=path)
+
+        self.assertEqual(config.allowed_email_domains, ("example.com", "company.com"))
+        self.assertEqual(str(config.rules.email_domain), "error")
+
+    def test_email_domain_rule_requires_allowed_domains(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[rules]\n"
+                "email_domain = true\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigError) as context:
+                load_config(config_path=path)
+
+        self.assertIn("requires 'policy.allowed_email_domains' to be set", str(context.exception))

@@ -110,6 +110,33 @@ class CliTests(unittest.TestCase):
         self.assertEqual(payload["results"][0]["warning_count"], 1)
         self.assertEqual(payload["results"][0]["issues"][0]["severity"], "warning")
 
+    def test_email_domain_policy_fails_with_error_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            path = root / "COMMIT_MSG"
+            config_path = root / ".coauthorcheck.toml"
+            path.write_text(
+                "Subject\n\nCo-authored-by: Jane Doe <jane@other.com>\n",
+                encoding="utf-8",
+            )
+            config_path.write_text(
+                "[rules]\n"
+                "email_domain = 'error'\n"
+                "[policy]\n"
+                "allowed_email_domains = ['example.com']\n",
+                encoding="utf-8",
+            )
+
+            result = runner.invoke(app, ["--format", "json", "--config", str(config_path), "--file", str(path)])
+
+        self.assertEqual(result.exit_code, 1)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["status"], "fail")
+        issue = payload["results"][0]["issues"][0]
+        self.assertEqual(issue["code"], "email-domain")
+        self.assertEqual(issue["severity"], "error")
+        self.assertEqual(issue["suggestion"], "Co-authored-by: Jane Doe <jane@example.com>")
+
     def test_file_input_strips_git_comment_lines_before_validation(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "COMMIT_MSG"
@@ -296,6 +323,27 @@ class CliTests(unittest.TestCase):
         self.assertEqual(payload["status"], "error")
         self.assertEqual(payload["error"]["message"], "current directory is not a git repository.")
         self.assertIn("commit message file path", payload["error"]["hint"])
+
+    def test_config_error_when_email_domain_rule_has_no_allowed_domains(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            path = root / "COMMIT_MSG"
+            config_path = root / ".coauthorcheck.toml"
+            path.write_text(
+                "Subject\n\nCo-authored-by: Jane Doe <jane@example.com>\n",
+                encoding="utf-8",
+            )
+            config_path.write_text(
+                "[rules]\n"
+                "email_domain = true\n",
+                encoding="utf-8",
+            )
+
+            result = runner.invoke(app, ["--config", str(config_path), "--file", str(path)])
+
+        self.assertEqual(result.exit_code, 2)
+        self.assertIn("'rules.email_domain'", result.output)
+        self.assertIn("allowed_email_domains", result.output)
 
     def test_module_exit_code_is_nonzero_for_validation_failures(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

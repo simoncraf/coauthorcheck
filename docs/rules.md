@@ -13,6 +13,10 @@ Example:
 [tool.coauthorcheck.rules]
 single_word_name = "warning"
 github_handle = "error"
+email_domain = "error"
+
+[tool.coauthorcheck.policy]
+allowed_email_domains = ["example.com"]
 ```
 
 Each rule accepts one of these values:
@@ -114,6 +118,33 @@ Examples:
 Co-authored-by: Jane Doe <octocat>
 Co-authored-by: Jane Doe <jane@@example.com>
 ```
+
+## email_domain
+
+Checks whether the email address belongs to one of the configured allowed domains.
+
+Example:
+
+```text
+Co-authored-by: Jane Doe <jane@other.com>
+```
+
+Configuration example:
+
+```toml
+[tool.coauthorcheck.rules]
+email_domain = "error"
+
+[tool.coauthorcheck.policy]
+allowed_email_domains = ["example.com", "company.com"]
+```
+
+How it works:
+
+- if the trailer email uses one of the allowed domains, no issue is reported
+- if the trailer email uses a different domain, `email-domain` is reported
+- if exactly one allowed domain is configured, `coauthorcheck` can suggest a corrected email address using that domain
+- if `email_domain` is enabled but `allowed_email_domains` is missing, configuration loading fails with an error
 
 ## Notes
 

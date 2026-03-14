@@ -182,6 +182,18 @@ You can also pass an explicit config file:
 
 Rule values may be set to `false`, `true`, `"error"`, or `"warning"`. Warning-level rules are reported in output but do not fail the command.
 
+The `email_domain` rule is policy-driven and requires an allowed-domain list:
+
+```toml
+[tool.coauthorcheck.rules]
+email_domain = "error"
+
+[tool.coauthorcheck.policy]
+allowed_email_domains = ["example.com"]
+```
+
+If `email_domain` is enabled without `allowed_email_domains`, `coauthorcheck` exits with a configuration error.
+
 ## Exit Codes
 
 In hooks and CI:
@@ -233,6 +245,8 @@ When validation issues are found:
   - `suggestion`
 
 When multiple issues affect the same trailer, `coauthorcheck` merges them into one canonical suggested trailer line. In text output that suggestion is shown once for the trailer; in JSON the related issues share the same `suggestion` value.
+
+If `email-domain` is triggered and exactly one allowed domain is configured, the suggestion also normalizes the email to that domain.
 
 When execution fails, `coauthorcheck` emits an error payload:
 

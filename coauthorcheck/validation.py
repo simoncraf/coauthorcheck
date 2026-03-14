@@ -58,7 +58,7 @@ def _extract_trailer_parts(trailer: Trailer) -> tuple[str | None, str | None]:
     return raw_value or None, None
 
 
-def _merged_suggestion(trailer: Trailer, issue_codes: set[str]) -> str:
+def _merged_suggestion(trailer: Trailer, issue_codes: set[str], config: Config) -> str:
     name, email = _extract_trailer_parts(trailer)
 
     if "missing-name" in issue_codes or not name:
@@ -72,15 +72,38 @@ def _merged_suggestion(trailer: Trailer, issue_codes: set[str]) -> str:
         email = "email@example.com"
     elif "malformed-email" in issue_codes:
         email = "email@example.com"
+    elif "email-domain" in issue_codes:
+        suggested_email = _suggest_email_for_allowed_domain(email, config.allowed_email_domains)
+        if suggested_email is not None:
+            email = suggested_email
 
     return _suggested_trailer(name=name, email=email)
 
 
-def _apply_suggestion(issues: list[ValidationIssue], trailer: Trailer) -> list[ValidationIssue]:
+def _suggest_email_for_allowed_domain(
+    email: str | None,
+    allowed_domains: tuple[str, ...],
+) -> str | None:
+    if not allowed_domains:
+        return None
+
+    local_part = "user"
+    if email and "@" in email:
+        candidate = email.split("@", 1)[0].strip()
+        if candidate:
+            local_part = candidate
+
+    if len(allowed_domains) == 1:
+        return f"{local_part}@{allowed_domains[0]}"
+
+    return None
+
+
+def _apply_suggestion(issues: list[ValidationIssue], trailer: Trailer, config: Config) -> list[ValidationIssue]:
     if not issues:
         return issues
 
-    suggestion = _merged_suggestion(trailer, {issue.code for issue in issues})
+    suggestion = _merged_suggestion(trailer, {issue.code for issue in issues}, config)
     for issue in issues:
         issue.suggestion = suggestion
     return issues
@@ -137,7 +160,7 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
                 )
             )
 
-        return _apply_suggestion(_dedupe_issues(issues), trailer)
+        return _apply_suggestion(_dedupe_issues(issues), trailer, config)
 
     name = match.group("name").strip()
     email = match.group("email").strip()
@@ -207,8 +230,26 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
                     severity=severity,
                 )
             )
+        else:
+            severity = config.rules.severity_for("email_domain")
+            if severity and config.allowed_email_domains:
+                domain = email.rsplit("@", 1)[1].lower()
+                if domain not in config.allowed_email_domains:
+                    suggestion = None
+                    suggested_email = _suggest_email_for_allowed_domain(email, config.allowed_email_domains)
+                    if suggested_email is not None:
+                        suggestion = _suggested_trailer(name=name, email=suggested_email)
+                    issues.append(
+                        _build_issue(
+                            "email-domain",
+                            "Use an email address from an allowed domain.",
+                            trailer.line_number,
+                            severity=severity,
+                            suggestion=suggestion,
+                        )
+                    )
 
-    return _apply_suggestion(_dedupe_issues(issues), trailer)
+    return _apply_suggestion(_dedupe_issues(issues), trailer, config)
 
 
 def validate_message(source: str, message: str, config: Config = DEFAULT_CONFIG) -> ValidationResult:
