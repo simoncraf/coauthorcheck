@@ -191,9 +191,10 @@ email_domain = "error"
 [tool.coauthorcheck.policy]
 allowed_email_domains = ["example.com"]
 blocked_email_domains = ["users.noreply.github.com"]
+allow_github_noreply = false
 ```
 
-You can use either `allowed_email_domains`, `blocked_email_domains`, or both. If `email_domain` is enabled without either policy, `coauthorcheck` exits with a configuration error.
+You can use `allowed_email_domains`, `blocked_email_domains`, `allow_github_noreply`, or combine them. If `email_domain` is enabled without any of those policies, `coauthorcheck` exits with a configuration error.
 
 The `name_parts` rule is also policy-aware. It uses `minimum_name_parts`, which defaults to `2`:
 

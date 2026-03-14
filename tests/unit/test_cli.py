@@ -162,6 +162,31 @@ class CliTests(unittest.TestCase):
         self.assertEqual(issue["code"], "email-domain")
         self.assertIsNone(issue["suggestion"])
 
+    def test_github_noreply_can_be_allowed_by_policy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            path = root / "COMMIT_MSG"
+            config_path = root / ".coauthorcheck.toml"
+            path.write_text(
+                "Subject\n\nCo-authored-by: Jane Doe <12345+jane@users.noreply.github.com>\n",
+                encoding="utf-8",
+            )
+            config_path.write_text(
+                "[rules]\n"
+                "email_domain = 'error'\n"
+                "[policy]\n"
+                "allowed_email_domains = ['example.com']\n"
+                "allow_github_noreply = true\n",
+                encoding="utf-8",
+            )
+
+            result = runner.invoke(app, ["--format", "json", "--config", str(config_path), "--file", str(path)])
+
+        self.assertEqual(result.exit_code, 0)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["status"], "pass")
+        self.assertEqual(payload["results"][0]["issues"], [])
+
     def test_file_input_strips_git_comment_lines_before_validation(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "COMMIT_MSG"
@@ -396,6 +421,7 @@ class CliTests(unittest.TestCase):
         self.assertIn("'rules.email_domain'", result.output)
         self.assertIn("allowed_email_domains", result.output)
         self.assertIn("blocked_email_domains", result.output)
+        self.assertIn("allow_github_noreply", result.output)
 
     def test_config_error_when_minimum_name_parts_is_invalid(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

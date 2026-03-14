@@ -11,6 +11,7 @@ NAME_EMAIL_PATTERN = re.compile(r"^(?P<name>.*?)\s*<(?P<email>[^<>]+)>$")
 EMAIL_PATTERN = re.compile(r"^[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+$")
 GITHUB_HANDLE_PATTERN = re.compile(r"^@[A-Za-z0-9-]+$")
 EMBEDDED_EMAIL_PATTERN = re.compile(r"(?P<email>[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+)$")
+GITHUB_NOREPLY_DOMAINS = {"users.noreply.github.com", "noreply.github.com"}
 
 
 def _build_issue(
@@ -115,6 +116,10 @@ def _email_domain_issue(name: str, email: str, line_number: int, config: Config)
         severity=config.rules.severity_for("email_domain"),
         suggestion=suggestion,
     )
+
+
+def _is_github_noreply_domain(domain: str) -> bool:
+    return domain in GITHUB_NOREPLY_DOMAINS
 
 
 def _apply_suggestion(issues: list[ValidationIssue], trailer: Trailer, config: Config) -> list[ValidationIssue]:
@@ -266,13 +271,24 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
             )
         else:
             severity = config.rules.severity_for("email_domain")
-            if severity and (config.allowed_email_domains or config.blocked_email_domains):
+            if severity and (
+                config.allowed_email_domains
+                or config.blocked_email_domains
+                or config.allow_github_noreply is not None
+            ):
                 domain = email.rsplit("@", 1)[1].lower()
-                violates_allowed_domains = bool(
-                    config.allowed_email_domains and domain not in config.allowed_email_domains
-                )
-                violates_blocked_domains = domain in config.blocked_email_domains
-                if violates_allowed_domains or violates_blocked_domains:
+                is_github_noreply = _is_github_noreply_domain(domain)
+                if is_github_noreply and config.allow_github_noreply is True:
+                    violates_allowed_domains = False
+                    violates_blocked_domains = False
+                    violates_github_noreply = False
+                else:
+                    violates_allowed_domains = bool(
+                        config.allowed_email_domains and domain not in config.allowed_email_domains
+                    )
+                    violates_blocked_domains = domain in config.blocked_email_domains
+                    violates_github_noreply = is_github_noreply and config.allow_github_noreply is False
+                if violates_allowed_domains or violates_blocked_domains or violates_github_noreply:
                     issues.append(_email_domain_issue(name, email, trailer.line_number, config))
 
     return _apply_suggestion(_dedupe_issues(issues), trailer, config)

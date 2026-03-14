@@ -58,6 +58,7 @@ class Config:
     rules: RuleConfig
     allowed_email_domains: tuple[str, ...] = ()
     blocked_email_domains: tuple[str, ...] = ()
+    allow_github_noreply: bool | None = None
     minimum_name_parts: int = 2
 
 
@@ -134,6 +135,9 @@ def _parse_config(data: dict, path: Path) -> Config:
         blocked_email_domains = policy_data.get("blocked_email_domains", [])
         if not isinstance(blocked_email_domains, list):
             raise ConfigError(f"'policy.blocked_email_domains' in {path} must be an array of strings.")
+        allow_github_noreply = policy_data.get("allow_github_noreply")
+        if allow_github_noreply is not None and not isinstance(allow_github_noreply, bool):
+            raise ConfigError(f"'policy.allow_github_noreply' in {path} must be a boolean.")
 
         normalized_domains: list[str] = []
         for domain in allowed_email_domains:
@@ -153,20 +157,30 @@ def _parse_config(data: dict, path: Path) -> Config:
         if minimum_name_parts < 1:
             raise ConfigError(f"'policy.minimum_name_parts' in {path} must be greater than or equal to 1.")
 
-        if (normalized_domains or normalized_blocked_domains) and "email_domain" not in rule_values:
+        if (
+            normalized_domains
+            or normalized_blocked_domains
+            or allow_github_noreply is not None
+        ) and "email_domain" not in rule_values:
             rule_values["email_domain"] = Severity.ERROR
 
         email_domain_severity = _normalize_rule_value(rule_values.get("email_domain"))
-        if email_domain_severity is not None and not normalized_domains and not normalized_blocked_domains:
+        if (
+            email_domain_severity is not None
+            and not normalized_domains
+            and not normalized_blocked_domains
+            and allow_github_noreply is None
+        ):
             raise ConfigError(
                 f"'rules.email_domain' in {path} requires 'policy.allowed_email_domains' or "
-                f"'policy.blocked_email_domains' to be set."
+                f"'policy.blocked_email_domains' or 'policy.allow_github_noreply' to be set."
             )
 
         return Config(
             rules=RuleConfig(**rule_values),
             allowed_email_domains=tuple(normalized_domains),
             blocked_email_domains=tuple(normalized_blocked_domains),
+            allow_github_noreply=allow_github_noreply,
             minimum_name_parts=minimum_name_parts,
         )
     except ValueError as error:

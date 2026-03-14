@@ -246,6 +246,37 @@ class ValidationTests(unittest.TestCase):
         self.assertFalse(result.is_valid)
         self.assertEqual(result.issues[0].suggestion, "Co-authored-by: Jane Doe <jane@example.com>")
 
+    def test_github_noreply_can_be_explicitly_allowed(self) -> None:
+        result = validate_message(
+            "commit12",
+            "Subject\n\nCo-authored-by: Jane Doe <12345+jane@users.noreply.github.com>\n",
+            config=Config(
+                rules=RuleConfig(email_domain="error"),
+                allowed_email_domains=("example.com",),
+                allow_github_noreply=True,
+            ),
+        )
+
+        self.assertTrue(result.is_valid)
+        self.assertEqual(result.issues, [])
+
+    def test_github_noreply_can_be_explicitly_disallowed(self) -> None:
+        result = validate_message(
+            "commit13",
+            "Subject\n\nCo-authored-by: Jane Doe <12345+jane@users.noreply.github.com>\n",
+            config=Config(
+                rules=RuleConfig(email_domain="error"),
+                allow_github_noreply=False,
+            ),
+        )
+
+        self.assertFalse(result.is_valid)
+        self.assertEqual([issue.code for issue in result.issues], ["email-domain"])
+        self.assertEqual(
+            result.issues[0].message,
+            "Use an email address from an allowed, non-blocked domain.",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

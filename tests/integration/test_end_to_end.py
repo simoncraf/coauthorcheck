@@ -227,6 +227,28 @@ class EndToEndIntegrationTests(unittest.TestCase):
         self.assertEqual(issue["code"], "email-domain")
         self.assertIsNone(issue["suggestion"])
 
+    def test_github_noreply_can_be_allowed_in_real_repo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Path(tmpdir)
+            init_repo(repo)
+            (repo / ".coauthorcheck.toml").write_text(
+                "[rules]\n"
+                "email_domain = 'error'\n"
+                "[policy]\n"
+                "allowed_email_domains = ['example.com']\n"
+                "allow_github_noreply = true\n",
+                encoding="utf-8",
+            )
+            empty_commit(
+                repo,
+                "GitHub noreply commit\n\nCo-authored-by: Jane Doe <12345+jane@users.noreply.github.com>",
+            )
+
+            completed = run_cli(["HEAD"], cwd=repo)
+
+        self.assertEqual(completed.returncode, 0)
+        self.assertIn("Summary: PASS", completed.stdout)
+
     def test_email_domain_rule_without_policy_is_config_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Path(tmpdir)
@@ -247,6 +269,7 @@ class EndToEndIntegrationTests(unittest.TestCase):
         self.assertIn("rules.email_domain", completed.stderr)
         self.assertIn("allowed_email_domains", completed.stderr)
         self.assertIn("blocked_email_domains", completed.stderr)
+        self.assertIn("allow_github_noreply", completed.stderr)
 
 
 if __name__ == "__main__":
