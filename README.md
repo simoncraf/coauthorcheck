@@ -34,11 +34,13 @@
 
 ## Usage
 
+`coauthorcheck` works in any Git repository, regardless of the project's language or build system.
 You can use `coauthorcheck` in one of these three ways:
 
 - as a `pre-commit` `commit-msg` hook for immediate local feedback
 - in GitHub Actions to validate branch or pull request commits before merge
 - directly from CLI
+
 
 ### pre-commit
 
