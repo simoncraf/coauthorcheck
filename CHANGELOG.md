@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.6.0] - 2026-03-15
+
+### Added
+
+- Rule severities with support for `error`, `warning`, and disabled rules.
+- Policy controls for `minimum_name_parts`, `allowed_email_domains`, `blocked_email_domains`, `allow_github_noreply`, and `ignore_bots`.
+- Dedicated policy documentation under `docs/policies.md`.
+- End-to-end integration tests using temporary Git repositories and real commits.
+
+### Changed
+
+- Renamed the name validation rule from `single_word_name` to `name_parts`.
+- Improved CI to install `pytest` explicitly and run unit and integration suites separately.
+- Expanded README, rules, and integrations documentation to explain policy-driven configuration and bot/email-domain behavior.
+
 ## [0.5.0] - 2026-03-14
 
 ### Added

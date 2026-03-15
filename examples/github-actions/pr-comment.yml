@@ -20,7 +20,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install coauthorcheck
-        run: pip install coauthorcheck==0.5.0
+        run: pip install coauthorcheck==0.6.0
 
       - name: Validate PR commits
         id: validate
