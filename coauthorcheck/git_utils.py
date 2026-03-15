@@ -19,7 +19,12 @@ class GitError(RuntimeError):
 
 
 def read_commit_message(commit: str) -> CommitMessage:
-    return CommitMessage(source=commit, message=_run_git(["show", "-s", "--format=%B", commit]))
+    return CommitMessage(
+        source=commit,
+        message=_run_git(["show", "-s", "--format=%B", commit]),
+        author_name=_run_git(["show", "-s", "--format=%an", commit]).strip() or None,
+        author_email=_run_git(["show", "-s", "--format=%ae", commit]).strip() or None,
+    )
 
 
 def read_commit_range(commit_range: str) -> list[CommitMessage]:

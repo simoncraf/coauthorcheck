@@ -187,6 +187,51 @@ class CliTests(unittest.TestCase):
         self.assertEqual(payload["status"], "pass")
         self.assertEqual(payload["results"][0]["issues"], [])
 
+    def test_ignore_bots_skips_bot_style_trailer_in_file_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            path = root / "COMMIT_MSG"
+            config_path = root / ".coauthorcheck.toml"
+            path.write_text(
+                "Subject\n\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\n",
+                encoding="utf-8",
+            )
+            config_path.write_text(
+                "[policy]\n"
+                "ignore_bots = true\n",
+                encoding="utf-8",
+            )
+
+            result = runner.invoke(app, ["--config", str(config_path), "--file", str(path)])
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("Summary: PASS", result.stdout)
+
+    def test_ignore_bots_skips_bot_authored_commit(self) -> None:
+        commits = [
+            CommitMessage(
+                source="HEAD",
+                message="Subject\n\nCo-authored-by: @octocat <octocat>\n",
+                author_name="dependabot[bot]",
+                author_email="49699333+dependabot[bot]@users.noreply.github.com",
+            ),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            config_path = root / ".coauthorcheck.toml"
+            config_path.write_text(
+                "[policy]\n"
+                "ignore_bots = true\n",
+                encoding="utf-8",
+            )
+
+            with patch("coauthorcheck.cli.read_commit_message", return_value=commits[0]):
+                result = runner.invoke(app, ["--config", str(config_path), "HEAD"])
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("Summary: PASS", result.stdout)
+
     def test_file_input_strips_git_comment_lines_before_validation(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "COMMIT_MSG"

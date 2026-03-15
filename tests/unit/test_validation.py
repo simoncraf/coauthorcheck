@@ -277,6 +277,28 @@ class ValidationTests(unittest.TestCase):
             "Use an email address from an allowed, non-blocked domain.",
         )
 
+    def test_ignore_bots_skips_bot_style_coauthor_name(self) -> None:
+        result = validate_message(
+            "commit14",
+            "Subject\n\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\n",
+            config=Config(rules=RuleConfig(), ignore_bots=True),
+        )
+
+        self.assertTrue(result.is_valid)
+        self.assertEqual(result.issues, [])
+
+    def test_ignore_bots_skips_bot_authored_commit(self) -> None:
+        result = validate_message(
+            "commit15",
+            "Subject\n\nCo-authored-by: @octocat <octocat>\n",
+            config=Config(rules=RuleConfig(), ignore_bots=True),
+            author_name="dependabot[bot]",
+            author_email="49699333+dependabot[bot]@users.noreply.github.com",
+        )
+
+        self.assertTrue(result.is_valid)
+        self.assertEqual(result.issues, [])
+
 
 if __name__ == "__main__":
     unittest.main()

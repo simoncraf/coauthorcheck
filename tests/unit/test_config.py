@@ -151,6 +151,19 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(config.allow_github_noreply)
         self.assertEqual(str(config.rules.email_domain), "error")
 
+    def test_ignore_bots_is_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[policy]\n"
+                "ignore_bots = true\n",
+                encoding="utf-8",
+            )
+
+            config = load_config(config_path=path)
+
+        self.assertTrue(config.ignore_bots)
+
     def test_minimum_name_parts_is_loaded(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / ".coauthorcheck.toml"
@@ -239,4 +252,19 @@ class ConfigTests(unittest.TestCase):
                 load_config(config_path=path)
 
         self.assertIn("'policy.allow_github_noreply'", str(context.exception))
+        self.assertIn("must be a boolean", str(context.exception))
+
+    def test_ignore_bots_must_be_boolean(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / ".coauthorcheck.toml"
+            path.write_text(
+                "[policy]\n"
+                "ignore_bots = 'yes'\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigError) as context:
+                load_config(config_path=path)
+
+        self.assertIn("'policy.ignore_bots'", str(context.exception))
         self.assertIn("must be a boolean", str(context.exception))

@@ -2,6 +2,8 @@
 
 This page explains each validation rule supported by `coauthorcheck`.
 
+For policy settings such as `minimum_name_parts`, email domain configuration, and `ignore_bots`, see [policies.md](policies.md).
+
 All rule ids can be configured in either:
 
 - `pyproject.toml` under `[tool.coauthorcheck.rules]`
@@ -20,6 +22,7 @@ minimum_name_parts = 2
 allowed_email_domains = ["example.com"]
 blocked_email_domains = ["users.noreply.github.com"]
 allow_github_noreply = false
+ignore_bots = false
 ```
 
 Each rule accepts one of these values:
@@ -184,3 +187,4 @@ How it works:
 - Lines elsewhere in the commit body are not treated as trailers.
 - If a message has no `Co-authored-by` trailers, it is currently considered valid.
 - When a trailer is invalid, `coauthorcheck` can also emit a suggested corrected trailer line. If multiple rules fail for the same trailer, the suggestion is merged into one canonical fix.
+- If `ignore_bots = true`, commits authored by bot accounts and bot-style coauthor names such as `dependabot[bot]` are skipped.

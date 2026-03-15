@@ -9,6 +9,8 @@ from coauthorcheck.config import Severity
 class CommitMessage:
     source: str
     message: str
+    author_name: str | None = None
+    author_email: str | None = None
 
 
 @dataclass(slots=True)

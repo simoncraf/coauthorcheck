@@ -12,6 +12,8 @@ EMAIL_PATTERN = re.compile(r"^[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+$")
 GITHUB_HANDLE_PATTERN = re.compile(r"^@[A-Za-z0-9-]+$")
 EMBEDDED_EMAIL_PATTERN = re.compile(r"(?P<email>[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+)$")
 GITHUB_NOREPLY_DOMAINS = {"users.noreply.github.com", "noreply.github.com"}
+BOT_NAME_PATTERN = re.compile(r"(?i)(?:^|[\s_-])[a-z0-9_.-]*bot(?:$|[\s_-])")
+GITHUB_BOT_SUFFIX_PATTERN = re.compile(r"(?i)\[bot\]$")
 
 
 def _build_issue(
@@ -155,9 +157,35 @@ def _name_part_issue(config: Config, line_number: int) -> ValidationIssue:
     )
 
 
+def _looks_like_bot_identity(name: str | None, email: str | None = None) -> bool:
+    normalized_name = (name or "").strip()
+    normalized_email = (email or "").strip().lower()
+
+    if normalized_name:
+        if GITHUB_BOT_SUFFIX_PATTERN.search(normalized_name):
+            return True
+        if BOT_NAME_PATTERN.search(normalized_name):
+            return True
+
+    if normalized_email:
+        local_part, _, domain = normalized_email.partition("@")
+        if GITHUB_BOT_SUFFIX_PATTERN.search(local_part):
+            return True
+        if BOT_NAME_PATTERN.search(local_part):
+            return True
+        if domain in GITHUB_NOREPLY_DOMAINS and local_part.endswith("[bot]"):
+            return True
+
+    return False
+
+
 def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     match = NAME_EMAIL_PATTERN.match(trailer.value)
+
+    trailer_name, trailer_email = _extract_trailer_parts(trailer)
+    if config.ignore_bots and _looks_like_bot_identity(trailer_name, trailer_email):
+        return []
 
     severity = config.rules.severity_for("incorrect_casing")
     if severity and trailer.token != COAUTHOR_TOKEN:
@@ -294,8 +322,17 @@ def validate_trailer(trailer: Trailer, config: Config = DEFAULT_CONFIG) -> list[
     return _apply_suggestion(_dedupe_issues(issues), trailer, config)
 
 
-def validate_message(source: str, message: str, config: Config = DEFAULT_CONFIG) -> ValidationResult:
+def validate_message(
+    source: str,
+    message: str,
+    config: Config = DEFAULT_CONFIG,
+    author_name: str | None = None,
+    author_email: str | None = None,
+) -> ValidationResult:
     issues: list[ValidationIssue] = []
+
+    if config.ignore_bots and _looks_like_bot_identity(author_name, author_email):
+        return ValidationResult(source=source, issues=[])
 
     for trailer in extract_coauthor_trailers(message):
         issues.extend(validate_trailer(trailer, config=config))

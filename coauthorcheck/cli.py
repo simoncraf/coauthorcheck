@@ -252,7 +252,16 @@ def run(
     except OSError as error:
         _fail(f"unable to read input: {error}", output_format=output_format)
 
-    results = [validate_message(message.source, message.message, config=config) for message in messages]
+    results = [
+        validate_message(
+            message.source,
+            message.message,
+            config=config,
+            author_name=message.author_name,
+            author_email=message.author_email,
+        )
+        for message in messages
+    ]
 
     if output_format == OutputFormat.JSON:
         render_json(results)

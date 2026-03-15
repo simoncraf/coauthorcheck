@@ -51,6 +51,22 @@ def empty_commit(path: Path, message: str) -> None:
     run_git(["commit", "--allow-empty", "-m", message], cwd=path)
 
 
+def empty_commit_as_author(path: Path, message: str, author_name: str, author_email: str) -> None:
+    env = os.environ.copy()
+    env["GIT_AUTHOR_NAME"] = author_name
+    env["GIT_AUTHOR_EMAIL"] = author_email
+    completed = subprocess.run(
+        ["git", "commit", "--allow-empty", "-m", message],
+        cwd=path,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if completed.returncode != 0:
+        raise AssertionError(completed.stderr.strip() or "git command failed during test setup")
+
+
 class EndToEndIntegrationTests(unittest.TestCase):
     def test_file_input_end_to_end(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -242,6 +258,27 @@ class EndToEndIntegrationTests(unittest.TestCase):
             empty_commit(
                 repo,
                 "GitHub noreply commit\n\nCo-authored-by: Jane Doe <12345+jane@users.noreply.github.com>",
+            )
+
+            completed = run_cli(["HEAD"], cwd=repo)
+
+        self.assertEqual(completed.returncode, 0)
+        self.assertIn("Summary: PASS", completed.stdout)
+
+    def test_ignore_bots_skips_bot_authored_commit_in_real_repo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Path(tmpdir)
+            init_repo(repo)
+            (repo / ".coauthorcheck.toml").write_text(
+                "[policy]\n"
+                "ignore_bots = true\n",
+                encoding="utf-8",
+            )
+            empty_commit_as_author(
+                repo,
+                "Bot commit\n\nCo-authored-by: @octocat <octocat>",
+                author_name="dependabot[bot]",
+                author_email="49699333+dependabot[bot]@users.noreply.github.com",
             )
 
             completed = run_cli(["HEAD"], cwd=repo)

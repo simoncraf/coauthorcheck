@@ -192,9 +192,12 @@ email_domain = "error"
 allowed_email_domains = ["example.com"]
 blocked_email_domains = ["users.noreply.github.com"]
 allow_github_noreply = false
+ignore_bots = true
 ```
 
 You can use `allowed_email_domains`, `blocked_email_domains`, `allow_github_noreply`, or combine them. If `email_domain` is enabled without any of those policies, `coauthorcheck` exits with a configuration error.
+
+`ignore_bots = true` skips validation for commits authored by bot accounts and for bot-style `Co-authored-by` names. This is useful when automation tools generate commit messages or coauthor trailers.
 
 The `name_parts` rule is also policy-aware. It uses `minimum_name_parts`, which defaults to `2`:
 

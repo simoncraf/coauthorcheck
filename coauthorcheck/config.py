@@ -59,6 +59,7 @@ class Config:
     allowed_email_domains: tuple[str, ...] = ()
     blocked_email_domains: tuple[str, ...] = ()
     allow_github_noreply: bool | None = None
+    ignore_bots: bool = False
     minimum_name_parts: int = 2
 
 
@@ -138,6 +139,9 @@ def _parse_config(data: dict, path: Path) -> Config:
         allow_github_noreply = policy_data.get("allow_github_noreply")
         if allow_github_noreply is not None and not isinstance(allow_github_noreply, bool):
             raise ConfigError(f"'policy.allow_github_noreply' in {path} must be a boolean.")
+        ignore_bots = policy_data.get("ignore_bots", False)
+        if not isinstance(ignore_bots, bool):
+            raise ConfigError(f"'policy.ignore_bots' in {path} must be a boolean.")
 
         normalized_domains: list[str] = []
         for domain in allowed_email_domains:
@@ -181,6 +185,7 @@ def _parse_config(data: dict, path: Path) -> Config:
             allowed_email_domains=tuple(normalized_domains),
             blocked_email_domains=tuple(normalized_blocked_domains),
             allow_github_noreply=allow_github_noreply,
+            ignore_bots=ignore_bots,
             minimum_name_parts=minimum_name_parts,
         )
     except ValueError as error:
