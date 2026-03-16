@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version as package_version
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Sequence
@@ -27,6 +28,16 @@ error_console = Console(stderr=True)
 class OutputFormat(StrEnum):
     TEXT = "text"
     JSON = "json"
+
+
+JSON_SCHEMA_VERSION = 1
+
+
+def _tool_version() -> str:
+    try:
+        return package_version("coauthorcheck")
+    except PackageNotFoundError:
+        return "unknown"
 
 
 def load_messages(
@@ -136,6 +147,8 @@ def _serialize_results(results: list[ValidationResult]) -> dict:
     warning_commit_count = sum(result.warning_count > 0 and result.is_valid for result in results)
     status = "pass" if invalid_count == 0 else "fail"
     return {
+        "schema_version": JSON_SCHEMA_VERSION,
+        "tool_version": _tool_version(),
         "status": status,
         "summary": {
             "commit_count": commit_count,
@@ -175,6 +188,8 @@ def render_json(results: list[ValidationResult]) -> None:
 def _fail(message: str, output_format: OutputFormat = OutputFormat.TEXT, hint: str | None = None) -> None:
     if output_format == OutputFormat.JSON:
         payload = {
+            "schema_version": JSON_SCHEMA_VERSION,
+            "tool_version": _tool_version(),
             "status": "error",
             "error": {
                 "message": message,

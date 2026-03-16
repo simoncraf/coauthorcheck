@@ -233,22 +233,35 @@ Output shape:
 
 ```json
 {
+  "schema_version": 1,
+  "tool_version": "0.6.0",
   "status": "pass",
   "summary": {
     "commit_count": 1,
     "invalid_commit_count": 0,
-    "issue_count": 0
+    "warning_commit_count": 0,
+    "issue_count": 0,
+    "error_count": 0,
+    "warning_count": 0
   },
   "results": [
     {
       "source": "abc123",
       "is_valid": true,
       "issue_count": 0,
+      "error_count": 0,
+      "warning_count": 0,
       "issues": []
     }
   ]
 }
 ```
+
+Contract notes:
+
+- `schema_version` is the JSON contract version intended for downstream automation such as the separate Marketplace action
+- `tool_version` is the installed `coauthorcheck` package version
+- action-side comment logic should treat this JSON output as the source of truth instead of parsing text output
 
 When validation issues are found:
 
@@ -289,7 +302,3 @@ See [examples/github-actions/pr-comment.yml](../examples/github-actions/pr-comme
 - removes the previous bot comment again once validation passes
 
 The PR comment workflow still calls the CLI directly instead of the reusable action because it needs access to the raw JSON file and custom comment-management logic.
-
-## Future Integration Work
-
-Future releases are expected to improve the reusable action further and may publish it in GitHub Marketplace once the action interface is stable.

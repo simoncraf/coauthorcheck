@@ -53,6 +53,8 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(result.exit_code, 0)
         payload = json.loads(result.stdout)
+        self.assertEqual(payload["schema_version"], 1)
+        self.assertIn("tool_version", payload)
         self.assertEqual(payload["status"], "pass")
         self.assertEqual(payload["summary"]["commit_count"], 1)
         self.assertEqual(payload["summary"]["invalid_commit_count"], 0)
@@ -103,6 +105,8 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(result.exit_code, 0)
         payload = json.loads(result.stdout)
+        self.assertEqual(payload["schema_version"], 1)
+        self.assertIn("tool_version", payload)
         self.assertEqual(payload["status"], "pass")
         self.assertEqual(payload["summary"]["invalid_commit_count"], 0)
         self.assertEqual(payload["summary"]["warning_commit_count"], 1)
@@ -131,6 +135,8 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(result.exit_code, 1)
         payload = json.loads(result.stdout)
+        self.assertEqual(payload["schema_version"], 1)
+        self.assertIn("tool_version", payload)
         self.assertEqual(payload["status"], "fail")
         issue = payload["results"][0]["issues"][0]
         self.assertEqual(issue["code"], "email-domain")
@@ -284,6 +290,8 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(result.exit_code, 1)
         payload = json.loads(result.stdout)
+        self.assertEqual(payload["schema_version"], 1)
+        self.assertIn("tool_version", payload)
         self.assertEqual(payload["status"], "fail")
         self.assertEqual(payload["summary"]["commit_count"], 2)
         self.assertEqual(payload["summary"]["invalid_commit_count"], 1)
@@ -441,6 +449,8 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(result.exit_code, 2)
         payload = json.loads(result.stdout)
+        self.assertEqual(payload["schema_version"], 1)
+        self.assertIn("tool_version", payload)
         self.assertEqual(payload["status"], "error")
         self.assertEqual(payload["error"]["message"], "current directory is not a git repository.")
         self.assertIn("commit message file path", payload["error"]["hint"])
