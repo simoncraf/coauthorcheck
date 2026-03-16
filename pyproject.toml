@@ -1,6 +1,6 @@
 [project]
 name = "coauthorcheck"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
     "rich>=14.3.3",
     "typer>=0.24.1",

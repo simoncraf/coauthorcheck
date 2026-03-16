@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.7.0] - 2026-03-16
+
+### Added
+
+- Stable JSON contract metadata with `schema_version` and `tool_version` in machine-readable output.
+
 ## [0.6.0] - 2026-03-15
 
 ### Added

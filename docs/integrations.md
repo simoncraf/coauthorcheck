@@ -13,7 +13,7 @@ Add this to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/simoncraf/coauthorcheck
-    rev: v0.6.0
+    rev: v0.7.0
     hooks:
       - id: coauthorcheck
         stages: [commit-msg]
@@ -234,7 +234,7 @@ Output shape:
 ```json
 {
   "schema_version": 1,
-  "tool_version": "0.6.0",
+  "tool_version": "0.7.0",
   "status": "pass",
   "summary": {
     "commit_count": 1,
